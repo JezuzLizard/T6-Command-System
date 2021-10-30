@@ -183,3 +183,8 @@
 		}
 	}
 }
+
+/*public*/ COM_GET_CMD_FEEDBACK_CHANNEL()
+{
+	return is_true( self.is_server ) ? "con" : "tell";
+}

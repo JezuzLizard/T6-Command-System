@@ -12,6 +12,108 @@ VOTE_INIT()
 	level.vote_start_anonymous = getDvarIntDefault( "anonymous_vote_start", 1 );
 }
 
+VOTEABLE_CVARALL_PRE_f( arg_list )
+{
+	name = arg_list[ 0 ];
+	dvar_name = arg_list[ 1 ];
+	new_value = arg_list[ 2 ];
+	result = [];
+	if ( isDefined( new_value ) && getDvar( dvar_name ) != "" )
+	{
+		result[ "message" ] = va( "%s would like to set %s to %s", name, dvar_name, new_value );
+		result[ "channels" ] = "con say g_log";
+		result[ "filter" ] = "cmdinfo";
+	}
+	else 
+	{
+		result[ "message" ] = "Cvarall set requires a valid <dvar name>, and <dvar value>.";
+		result[ "channels" ] = self COM_GET_CMD_FEEDBACK_CHANNEL();
+		result[ "filter" ] = "cmderror";
+	}
+	return result;
+}
+
+case "ca":
+case "cvarall":
+
+	break;
+case "k":
+case "kick":
+	player_data = find_player_in_server( key_value_or_cmd_arg_0 );
+	if ( isDefined( key_value_or_cmd_arg_0 ) && isDefined( player_data ) )
+	{
+		COM_PRINTF( "con say g_log", "cmdinfo", va( "vote:start: %s would like to kick %s.", name, player_data[ "name" ] ), self );
+	}
+	else 
+	{
+		COM_PRINTF( channel, "cmderror", "vote:start: Could not find player.", self );
+		return;
+	}
+	break;
+case "nm":
+case "nextmap":
+	rotation_data = find_map_data_from_alias( alias );
+	if ( rotation_data[ "mapname" ] != "" )
+	{
+		COM_PRINTF( "con say g_log", "cmdinfo", va( "vote:start: %s would like to set the next map to %s.", name, get_map_display_name_from_location( rotation_data[ "location" ] ) ), self );
+	}
+	else 
+	{
+		COM_PRINTF( channel, "cmderror", "vote:start: Could not find map from alias.", self );
+		return;
+	}
+	break;
+
+	switch ( key_type )
+{
+	// case "c":
+	// case "command":
+	// 	CMD_EXECUTE( namespace, cmdname, arg_list )
+	// 	break;
+	// case "d":
+	// case "dvar":
+	// 	setDvar( key_value_or_cmd_arg_0, cmd_arg_1 );
+	// 	break;
+	case "ca":
+	case "cvarall":
+		args = [];
+		args[ 0 ] = key_value_or_cmd_arg_0;
+		args[ 1 ] = cmd_arg_1;
+		CMD_CLIENT_CVARALL_f( args );
+		CMD_EXECUTE( "admin", "cvarall", args );
+		break;
+	case "k":
+	case "kick":
+		args = [];
+		args[ 0 ] = player_data[ "guid" ];
+		CMD_ADMIN_KICK_f( args );
+		break;
+	case "nm":
+	case "nextmap":
+		args = [];
+		args[ 0 ] = key_value_or_cmd_arg_0;
+		CMD_NEXTMAP_f( arg_list );
+		break;
+	case "g":
+	case "gamerule":
+		CMD_EXECUTE( "gamerule", screen_name, undefined );
+		break;
+}
+
+VOTE_ADDVOTEABLE( vote_type_aliases, pre_vote_execute_func, post_vote_execute_func )
+{
+	if ( !isDefined( level.custom_votes ) )
+	{
+		level.custom_votes = [];
+	}
+	if ( !isDefined( level.custom_votes[ vote_type_aliases ] ) )
+	{
+		level.custom_votes[ vote_type_aliases ] = spawnStruct();
+		level.custom_votes[ vote_type_aliases ].pre_func = pre_vote_execute_func;
+		level.custom_votes[ vote_type_aliases ].post_func = post_vote_execute_func;
+	}
+}
+
 /*private*/ get_vote_threshold()
 {
 	switch ( level.players.size )
