@@ -10,6 +10,9 @@ VOTE_INIT()
 {
 	level.vote_timeout = 30;
 	level.vote_start_anonymous = getDvarIntDefault( "anonymous_vote_start", 1 );
+	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
+	CMD_ADDCOMMANDLISTENER( "listener_vote", "yes" );
+	CMD_ADDCOMMANDLISTENER( "listener_vote", "no" );
 }
 
 VOTEABLE_CVARALL_PRE_f( arg_list )
@@ -22,7 +25,7 @@ VOTEABLE_CVARALL_PRE_f( arg_list )
 	{
 		result[ "message" ] = va( "%s would like to set %s to %s", name, dvar_name, new_value );
 		result[ "channels" ] = "con say g_log";
-		result[ "filter" ] = "cmdinfo";
+		result[ "filter" ] = "notitle";
 	}
 	else 
 	{
@@ -33,71 +36,74 @@ VOTEABLE_CVARALL_PRE_f( arg_list )
 	return result;
 }
 
-case "ca":
-case "cvarall":
-
-	break;
-case "k":
-case "kick":
-	player_data = find_player_in_server( key_value_or_cmd_arg_0 );
-	if ( isDefined( key_value_or_cmd_arg_0 ) && isDefined( player_data ) )
+VOTEABLE_KICK_PRE_f( arg_list )
+{
+	name = arg_list[ 0 ];
+	player_data = find_player_in_server( arg_list[ 1 ] );
+	result = [];
+	if ( isDefined( player_data ) )
 	{
-		COM_PRINTF( "con say g_log", "cmdinfo", va( "vote:start: %s would like to kick %s.", name, player_data[ "name" ] ), self );
+		result[ "message" ] = va( "%s would like to kick %s", name, player_data[ "name" ] );
+		result[ "channels" ] = "con say g_log";
+		result[ "filter" ] = "notitle";
 	}
 	else 
 	{
-		COM_PRINTF( channel, "cmderror", "vote:start: Could not find player.", self );
-		return;
+		result[ "message" ] = "Could not find player";
+		result[ "channels" ] = self COM_GET_CMD_FEEDBACK_CHANNEL();
+		result[ "filter" ] = "cmderror";
 	}
-	break;
-case "nm":
-case "nextmap":
-	rotation_data = find_map_data_from_alias( alias );
+	return result;
+}
+
+VOTEABLE_NEXTMAP_PRE_f( arg_list )
+{
+	name = arg_list[ 0 ];
+	rotation_data = find_map_data_from_alias( arg_list[ 1 ] );
+	result = [];
 	if ( rotation_data[ "mapname" ] != "" )
 	{
-		COM_PRINTF( "con say g_log", "cmdinfo", va( "vote:start: %s would like to set the next map to %s.", name, get_map_display_name_from_location( rotation_data[ "location" ] ) ), self );
+		if ( sessionModeIsZombiesGame() )
+		{
+			display_name = get_ZM_map_display_name_from_location( rotation_data[ "location" ] );
+		}
+		else 
+		{
+			display_name = get_MP_map_name( rotation_data[ "mapname" ] );
+		}
+		result[ "message" ] = va( "%s would like to set the next map to %s", name, display_name );
+		result[ "channels" ] = "con say g_log";
+		result[ "filter" ] = "cmdinfo";
 	}
 	else 
 	{
-		COM_PRINTF( channel, "cmderror", "vote:start: Could not find map from alias.", self );
-		return;
+		result[ "message" ] = "Could not find map from alias";
+		result[ "channels" ] = self COM_GET_CMD_FEEDBACK_CHANNEL();
+		result[ "filter" ] = "cmderror";
 	}
-	break;
+	return result;
+}
 
-	switch ( key_type )
+VOTEABLE_CVARALL_POST_f( arg_list )
 {
-	// case "c":
-	// case "command":
-	// 	CMD_EXECUTE( namespace, cmdname, arg_list )
-	// 	break;
-	// case "d":
-	// case "dvar":
-	// 	setDvar( key_value_or_cmd_arg_0, cmd_arg_1 );
-	// 	break;
-	case "ca":
-	case "cvarall":
-		args = [];
-		args[ 0 ] = key_value_or_cmd_arg_0;
-		args[ 1 ] = cmd_arg_1;
-		CMD_CLIENT_CVARALL_f( args );
-		CMD_EXECUTE( "admin", "cvarall", args );
-		break;
-	case "k":
-	case "kick":
-		args = [];
-		args[ 0 ] = player_data[ "guid" ];
-		CMD_ADMIN_KICK_f( args );
-		break;
-	case "nm":
-	case "nextmap":
-		args = [];
-		args[ 0 ] = key_value_or_cmd_arg_0;
-		CMD_NEXTMAP_f( arg_list );
-		break;
-	case "g":
-	case "gamerule":
-		CMD_EXECUTE( "gamerule", screen_name, undefined );
-		break;
+	args = [];
+	args[ 0 ] = arg_list[ 0 ];
+	args[ 1 ] = arg_list[ 1 ];
+	self CMD_EXECUTE( "admin", "cvarall", args );
+}
+
+VOTEABLE_KICK_POST_f( arg_list )
+{
+	args = [];
+	args[ 0 ] = arg_list[ 0 ];
+	self CMD_EXECUTE( "admin", "kick", args );
+}
+
+VOTEABLE_NEXTMAP_POST_f( arg_list )
+{
+	args = [];
+	args[ 0 ] = arg_list[ 0 ];
+	self CMD_EXECUTE( "admin", "nextmap", args );
 }
 
 VOTE_ADDVOTEABLE( vote_type_aliases, pre_vote_execute_func, post_vote_execute_func )
