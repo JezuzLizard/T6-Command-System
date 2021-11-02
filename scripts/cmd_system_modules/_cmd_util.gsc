@@ -475,3 +475,21 @@ get_alias_index( alias, array_of_aliases )
 	}
 	return -1;
 }
+
+getDvarStringDefault( dvarname, default_value )
+{
+	cur_dvar_value = getDvar( dvarname );
+	return cur_dvar_value != "" ? cur_dvar_value : default_value;
+}
+
+is_command_token( char )
+{
+	foreach ( token in level.custom_commands_tokens )
+	{
+		if ( char == token )
+		{
+			return true;
+		}
+	}
+	return false;
+}
