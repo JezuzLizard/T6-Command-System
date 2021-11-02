@@ -3,6 +3,10 @@
 
 CMD_INIT()
 {
+	if ( getDvar( "sv_maprotation_old" ) == "" )
+	{
+		setDvar( "sv_maprotation_old", getDvar( "sv_maprotation" ) );
+	}
 	COM_INIT();
 	level.server = spawnStruct();
 	level.server.name = "Server";
@@ -23,7 +27,6 @@ CMD_INIT()
 	CMD_ADDCOMMAND( "admin a", "changemap cm", "admin:changemap <mapalias>", ::CMD_CHANGEMAP_f, true );
 	CMD_ADDCOMMAND( "admin a", "resetrotation rr", "admin:resetrotation", ::CMD_RESETROTATION_f );
 	CMD_ADDCOMMAND( "admin a", "randomnextmap rnm", "admin:randomnextmap", ::CMD_RANDOMNEXTMAP_f );
-	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2]" ::CMD_VOTESTART_f, true );
 	VOTE_INIT();
 
 	VOTE_ADDVOTEABLE( "cvarall ca", ::VOTEABLE_CVARALL_PRE_f, ::VOTEABLE_CVARALL_POST_f );
@@ -34,8 +37,6 @@ CMD_INIT()
 	CMD_ADDCOMMANDLISTENER( "listener_cmdlist", "page" );
 	CMD_ADDCOMMANDLISTENER( "listener_playerlist", "showmore" );
 	CMD_ADDCOMMANDLISTENER( "listener_playerlist", "page" );
-	CMD_ADDCOMMANDLISTENER( "listener_vote", "yes" );
-	CMD_ADDCOMMANDLISTENER( "listener_vote", "no" );
 
 	level thread COMMAND_BUFFER();
 	level thread dvar_command_watcher();
