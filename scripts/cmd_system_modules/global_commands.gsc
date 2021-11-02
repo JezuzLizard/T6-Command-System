@@ -27,16 +27,11 @@ CMD_VOTESTART_f( arg_list )
 		return;
 	}
 	key_type = arg_list[ 0 ];
-	key_value_or_cmd_arg_0 = arg_list[ 1 ];
-	if ( key_value_or_cmd_arg_0 == "start" || key_value_or_cmd_arg_0 == "s" )
-	{
-		COM_PRINTF( channel, "cmderror", "vote:start: Nice try.", self );
-		return;
-	}
-	cmd_arg_1 = arg_list[ 2 ];
-	cmd_arg_2 = arg_list[ 3 ];
-	cmd_arg_3 = arg_list[ 4 ];
-	if ( !isDefined( key_type ) || !isDefined( key_value_or_cmd_arg_0 ) )
+	cmd_arg_1 = arg_list[ 1 ];
+	cmd_arg_2 = arg_list[ 2 ];
+	cmd_arg_3 = arg_list[ 3 ];
+	cmd_arg_4 = arg_list[ 4 ];
+	if ( !isDefined( key_type ) )
 	{
 		COM_PRINTF( channel, "cmderror", "vote:start: Missing params, 2 args required <key_type>, <key_value>.", self );
 		return;
@@ -53,16 +48,17 @@ CMD_VOTESTART_f( arg_list )
 	cmd_index = get_alias_index( key_type, cmd_alias_keys );
 	if ( cmd_index != -1 )
 	{
-		pre_func_args = [];
-		pre_func_args[ 0 ] = name;
-		pre_func_args[ 1 ] = key_value_or_cmd_arg_0;
-		pre_func_args[ 2 ] = cmd_arg_1;
-		pre_func_args[ 3 ] = cmd_arg_2;
-		pre_func_args[ 4 ] = cmd_arg_3;
-		pre_message_result = self [[ level.custom_votes[ cmd_alias_keys[ cmd_index ] ].pre_func ]]( pre_func_args );
-		if ( pre_message_result[ "filter" ] != "cmderror" )
+		func_args = [];
+		func_args[ 0 ] = name;
+		func_args[ 1 ] = cmd_arg_1;
+		func_args[ 2 ] = cmd_arg_2;
+		func_args[ 3 ] = cmd_arg_3;
+		func_args[ 4 ] = cmd_arg_4;
+		pre_message_result = self [[ level.custom_votes[ cmd_alias_keys[ cmd_index ] ].pre_func ]]( func_args );
+		COM_PRINTF( pre_message_result[ "channels" ], pre_message_result[ "filter" ], pre_message_result[ "message" ], self );
+		if ( pre_message_result[ "filter" ] == "cmderror" )
 		{
-			COM_PRINTF( )
+			return;
 		}
 	}
 	else 
@@ -91,6 +87,7 @@ CMD_VOTESTART_f( arg_list )
 	{
 		return;
 	}
+	self [[ level.custom_votes[ cmd_alias_keys[ cmd_index ] ].post_func ]]( func_args );
 }
 
 CMD_RANDOMNEXTMAP_f( arg_list )
@@ -99,7 +96,14 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 	alias_keys = strTok( string, " " );
 	random_alias = random( alias_keys );
 	rotation_data = find_map_data_from_alias( random_alias );
-	rotation_string = va( "exec zm_%s_%s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "location" ], rotation_data[ "mapname" ] );
+	if ( sessionModeIsZombiesGame() )
+	{
+		rotation_string = va( "exec zm_%s_%s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "location" ], rotation_data[ "mapname" ] );
+	}
+	else 
+	{
+		rotation_string = va( "exec %s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "mapname" ] );
+	}
 	setDvar( "sv_maprotation", rotation_string );
 	setDvar( "sv_maprotationCurrent", rotation_string );
 	result[ "filter" ] = "cmdinfo";
@@ -109,8 +113,8 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 
 CMD_RESETROTATION_f( arg_list )
 {
-	setDvar( "sv_maprotation", getDvar( "grief_original_rotation" ) );
-	setDvar( "sv_maprotationCurrent", getDvar( "grief_original_rotation" ) );
+	setDvar( "sv_maprotation", getDvar( "sv_maprotation_old" ) );
+	setDvar( "sv_maprotationCurrent", getDvar( "sv_maprotation_old" ) );
 	result[ "filter" ] = "cmdinfo";
 	result[ "message" ] = "admin:resetrotation: Successfully reset the map rotation";
 	return result;
@@ -127,9 +131,18 @@ CMD_CHANGEMAP_f( arg_list )
 		rotation_data = find_map_data_from_alias( alias );
 		if ( rotation_data[ "mapname" ] != "" )
 		{
-			rotation_string = va( "exec zm_%s_%s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "location" ], rotation_data[ "mapname" ] );
-			message = va( "admin:changemap: %s second rotate to map %s countdown started", level.custom_commands_restart_countdown, get_map_display_name_from_location( rotation_data[ "location" ] ) );
-			COM_PRINTF( "g_log say " + channel, "cmdinfo", self.name + " executed " + message );
+			if ( sessionModeIsZombiesGame() )
+			{
+				display_name = get_ZM_map_display_name_from_location_gametype( rotation_data[ "location" ], rotation_data[ "gametype" ] );
+				rotation_string = va( "exec zm_%s_%s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "location" ], rotation_data[ "mapname" ] );
+			}
+			else 
+			{
+				display_name = get_MP_map_name( rotation_data[ "mapname" ] );
+				rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
+			}
+			message = va( "admin:changemap: %s second rotate to map %s countdown started", level.custom_commands_restart_countdown, display_name );
+			COM_PRINTF( "g_log say con", "cmdinfo", self.name + " executed " + message );
 			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
@@ -154,11 +167,20 @@ CMD_NEXTMAP_f( arg_list )
 		rotation_data = find_map_data_from_alias( alias );
 		if ( rotation_data[ "mapname" ] != "" )
 		{
-			rotation_string = va( "exec zm_%s_%s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "location" ], rotation_data[ "mapname" ] );
+			if ( sessionModeIsZombiesGame() )
+			{
+				display_name = get_ZM_map_display_name_from_location_gametype( rotation_data[ "location" ] );
+				rotation_string = va( "exec zm_%s_%s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "location" ], rotation_data[ "mapname" ] );
+			}
+			else 
+			{
+				display_name = get_MP_map_name( rotation_data[ "mapname" ] );
+				rotation_string = va( "exec %s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "mapname" ] );
+			}
 			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "admin:nextmap: Successfully set next map to %s", get_map_display_name_from_location( rotation_data[ "location" ] ) );
+			result[ "message" ] = va( "admin:nextmap: Successfully set next map to %s", display_name );
 		}
 		else 
 		{
@@ -178,9 +200,8 @@ CMD_ROTATE_f( arg_list )
 {
 	self notify( "rotate_f" );
 	self endon( "rotate_f" );
-	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	message = va( "admin:rotate: %s second rotate countdown started", level.custom_commands_restart_countdown );
-	COM_PRINTF( "g_log say " + channel, "cmdinfo", self.name + " executed " + message );
+	COM_PRINTF( "g_log say con" + channel, "cmdinfo", self.name + " executed " + message );
 	for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 	{
 		wait 1;
@@ -195,9 +216,8 @@ CMD_RESTART_f( arg_list )
 {
 	self notify( "restart_f" );
 	self endon( "restart_f" );
-	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	message = va( "admin:restart: %s second restart countdown started", level.custom_commands_restart_countdown );
-	COM_PRINTF( "g_log " + channel, "cmdinfo", self.name + " executed " + message );
+	COM_PRINTF( "g_log say con", "cmdinfo", self.name + " executed " + message );
 	for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 	{
 		wait 1;
@@ -206,16 +226,6 @@ CMD_RESTART_f( arg_list )
 	level notify( "end_commands" );
 	wait 0.5;
 	map_restart( false );
-}
-
-/*private*/ COMMAND_COOLDOWN()
-{
-	level.players_in_session[ self.name ].command_cooldown = level.players_in_session[ self.name ].server_rank_system[ "privileges" ][ "cmd_cooldown" ];
-	while ( level.players_in_session[ self.name ].command_cooldown > 0 )
-	{
-		level.players_in_session[ self.name ].command_cooldown--;
-		wait 1;
-	}
 }
 
 CMD_PLAYERLIST_f( arg_list )
@@ -441,11 +451,6 @@ CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_c
 	if ( !isDefined( level.custom_commands ) )
 	{
 		level.custom_commands = [];
-		level.custom_commands_namespaces_total = 0;
-		level.custom_commands_total = 0;
-		level.custom_commands_page_count = 0;
-		level.custom_commands_page_max = 5;
-		level.custom_commands_listener_timeout = 12;
 	}
 	if ( !isDefined( level.custom_commands[ namespace_aliases ] ) )
 	{
@@ -505,14 +510,15 @@ CMD_EXECUTE( namespace, cmdname, arg_list )
 	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	if ( isDefined( result ) && result[ "filter" ] != "cmderror" )
 	{
-		message = self.name + " executed " + result[ "message" ];
+		cmd_log = self.name + " executed " + result[ "message" ];
+		COM_PRINTF( "g_log", result[ "filter" ], cmd_log, self );
 		if ( isDefined( result[ "channels" ] ) )
 		{
 			COM_PRINTF( result[ "channels" ], result[ "filter" ], message, self );
 		}
 		else 
 		{
-			COM_PRINTF( "g_log " + channel, result[ "filter" ], message, self );
+			COM_PRINTF( channel, result[ "filter" ], message, self );
 		}
 	}
 	else if ( !is_threaded_cmd )
@@ -541,16 +547,23 @@ CMD_EXECUTE( namespace, cmdname, arg_list )
 	level thread end_commands_on_end_game();
 	while ( true )
 	{
-		level waittill( "say", message, player );
+		level waittill( "say", message, player, ishidden );
 		if ( isDefined( player ) && !isSubStr( message, ":" ) && !array_validate( player.temp_listeners ) )
 		{
 			continue;
 		}
+		/*
+		if ( isDefined( player ) && !ishidden && !is_command_token( message[ 0 ] ) )
+		{
+			continue;
+		}
+		*/
 		if ( !isDefined( player ) )
 		{
 			player = level.server;
 		}
 		found_listener = false;
+		message = toLower( message );
 		if ( array_validate( player.temp_listeners ) )
 		{
 			listener_cmds_args = strTok( message, " " );
@@ -570,36 +583,88 @@ CMD_EXECUTE( namespace, cmdname, arg_list )
 				continue;
 			}
 		}
-		channel = is_true( player.is_server ) ? "con" : "tell";
+		channel = player COM_GET_CMD_FEEDBACK_CHANNEL();
+		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
+		{
+			COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown ), player );
+			continue;
+		}
 		multi_cmds = parse_cmd_message( message );
 		if ( !array_validate( multi_cmds ) )
 		{
 			continue;
 		}
-		if ( level.players_in_session[ player.name ].command_cooldown == 0 && !player.is_server )
+		if ( multi_cmds.size > 1 && !player can_use_multi_cmds() )
 		{
-			for ( cmd_index = 0; cmd_index < multi_cmds.size; cmd_index++ )
+			temp_array_index = multi_cmds[ 0 ];
+			multi_cmds = [];
+			multi_cmds[ 0 ] = temp_array_index;
+		}
+		for ( cmd_index = 0; cmd_index < multi_cmds.size; cmd_index++ )
+		{
+			namespace = toLower( multi_cmds[ cmd_index ][ "namespace" ] );
+			cmdname = toLower( multi_cmds[ cmd_index ][ "cmdname" ] );
+			args = multi_cmds[ cmd_index ][ "args" ];
+			if ( !player has_permission_for_cmd( namespace, cmdname ) )
 			{
-				namespace = toLower( multi_cmds[ cmd_index ][ "namespace" ] );
-				cmdname = toLower( multi_cmds[ cmd_index ][ "cmdname" ] );
-				args = multi_cmds[ cmd_index ][ "args" ];
-				if ( !player has_permission_for_cmd( namespace, cmdname ) )
-				{
-					COM_PRINTF( "tell", "cmderror", va( "You do not have permission to use %s command.", cmdname ), player );
-				}
-				else 
-				{
-					COM_PRINTF( channel, "cmdinfo", va( "Used namespace %s cmd %s", namespace, cmdname ), player );
-					player CMD_EXECUTE( namespace, cmdname, args );
-					player thread COMMAND_COOLDOWN();
-				}
+				COM_PRINTF( "tell", "cmderror", va( "You do not have permission to use %s command.", cmdname ), player );
+			}
+			else 
+			{
+				player CMD_EXECUTE( namespace, cmdname, args );
+				player thread CMD_COOLDOWN();
 			}
 		}
-		else 
+	}
+}
+
+CMD_COOLDOWN()
+{
+	if ( is_true( self.is_server ) )
+	{
+		return;
+	}
+	if ( is_true( self.is_admin ) )
+	{
+		return;
+	}
+	player_guid = self getGUID();
+	foreach ( guid in level.server_users[ "admins" ].guids )
+	{
+		if ( player_guid == guid )
 		{
-			COM_PRINTF( "tell", "cmderror", va( "You cannot use another command for %s seconds", level.players_in_session[ player.name ].command_cooldown ), player );
+			self.is_admin = true;
+			return;
 		}
 	}
+	player.cmd_cooldown = level.custom_commands_cooldown_time;
+	while ( player.cmd_cooldown > 0 )
+	{
+		player.cmd_cooldown--;
+		wait 1;
+	}
+}
+
+can_use_multi_cmds()
+{
+	if ( is_true( self.is_server ) )
+	{
+		return true;
+	}
+	if ( is_true( self.is_admin ) )
+	{
+		return true;
+	}
+	player_guid = self getGUID();
+	foreach ( guid in level.server_users[ "admins" ].guids )
+	{
+		if ( player_guid == guid )
+		{
+			self.is_admin = true;
+			return true;
+		}
+	}
+	return false;
 }
 
 /*public*/ has_permission_for_cmd( namespace, cmd )
@@ -788,76 +853,4 @@ temporary_command_listener_timelimit( listener_name, timelimit )
 	level.server_users[ "admins" ].guids = int_keys;
 	level.grief_no_permissions_required_namespaces = [];
 	level.grief_no_permissions_required_namespaces[ 0 ] = "vote v";
-}
-
-/*private*/ find_map_data_from_alias( alias )
-{
-	result = [];
-	switch ( alias )
-	{
-		case "c":
-		case "cell":
-		case "block":
-		case "cellblock":
-			gamemode = "grief";
-			location = "cellblock";
-			mapname = "zm_prison";
-			break;
-		case "s":
-		case "street":
-		case "borough":
-		case "buried":
-			gamemode = "grief";
-			location = "street";
-			mapname = "zm_buried";
-			break;
-		case "f":
-		case "farm":
-			gamemode = "grief";
-			location = "farm";
-			mapname = "zm_transit";
-			break;
-		case "t":
-		case "town":
-			gamemode = "grief";
-			location = "town";
-			mapname = "zm_transit";
-			break;
-		case "b":
-		case "bus":
-		case "depot":
-			gamemode = "grief";
-			location = "transit";
-			mapname = "zm_transit";
-			break;
-		case "d":
-		case "din":
-		case "diner":
-			gamemode = "grief";
-			location = "diner";
-			mapname = "zm_transit";
-			break;
-		case "tu":
-		case "tunnel":
-			gamemode = "grief";
-			location = "tunnel";
-			mapname = "zm_transit";
-			break;
-		case "p":
-		case "pow":
-		case "power":
-			gamemode = "grief";
-			location = "power";
-			mapname = "zm_transit";
-			break;
-		default:
-			result[ "gamemode" ] = "";
-			result[ "location" ] = "";
-			result[ "mapname" ] = "";
-			return result;
-	}
-	result[ "gamemode" ] = gamemode;
-	result[ "location" ] = location;
-	result[ "mapname" ] = mapname;
-	return result;
 }
