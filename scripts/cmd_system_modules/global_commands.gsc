@@ -1,14 +1,9 @@
-#include maps/mp/zombies/_zm_utility;
+#include scripts/cmd_system_modules/_vote;
+#include scripts/cmd_system_modules/_com;
+#include scripts/cmd_system_modules/_text_parser;
+
 #include common_scripts/utility;
 #include maps/mp/_utility;
-#include scripts/zm/promod/utility/_grief_util;
-#include maps/mp/zombies/_zm_perks;
-#include scripts/zm/promod/zgriefp;
-#include scripts/zm/promod/zgriefp_overrides;
-#include scripts/zm/promod/utility/_vote;
-#include scripts/zm/promod/utility/_com;
-#include scripts/zm/promod/_gametype_setup;
-#include scripts/zm/promod/utility/_text_parser;
 
 CMD_VOTESTART_f( arg_list )
 {
@@ -270,9 +265,9 @@ CMD_PLAYERLIST_f( arg_list )
 					COM_PRINTF( channel, "cmdinfo", message, self );
 				}
 				COM_PRINTF( channel, "cmdinfo", va( "Displaying page %s out of %s do /showmore or /page(num) to display more players.", current_page, remaining_pages ), self );
-				setup_temporary_command_listener( "listener_playerlist", level.custom_commands_listener_timeout, self );
-				result = wait_temporary_command_listener( listener_name )
-				clear_temporary_command_listener( "listener_playerlist", self );
+				self setup_temporary_command_listener( "listener_playerlist", level.custom_commands_listener_timeout );
+				result = self wait_temporary_command_listener( listener_name )
+				self clear_temporary_command_listener( "listener_playerlist" );
 				if ( result[ 0 ] == "timeout" )
 				{
 					return;
@@ -420,32 +415,6 @@ CMD_CLIENT_CVARALL_f( arg_list )
 	return result;
 }
 
-CMD_ADDCOMMANDLISTENER( listener_name, listener_cmd )
-{
-	if ( !isDefined( level.listener_commands ) )
-	{
-		level.listener_commands = [];
-	}
-	if ( !isDefined( level.listener_commands[ listener_name ] ) )
-	{
-		level.listener_commands[ listener_name ] = [];
-	}
-	if ( !isDefined( level.listener_commands[ listener_name ][ listener_cmd ] ) )
-	{
-		level.listener_commands[ listener_name ][ listener_cmd ] = true;
-	}
-}
-
-CMD_ISCOMMANDLISTENER( listener_name, listener_cmd )
-{
-	return is_true( level.listener_commands[ listener_name ][ listener_cmd ] );
-}
-
-CMD_EXECUTELISTENER( listener_name, arg_list )
-{
-	self.temp_listeners[ listener_name ].data = arg_list;
-}
-
 CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_cmd )
 {
 	if ( !isDefined( level.custom_commands ) )
@@ -553,6 +522,7 @@ CMD_EXECUTE( namespace, cmdname, arg_list )
 			continue;
 		}
 		/*
+		//uncomment when say notify improvement is pushed to prod
 		if ( isDefined( player ) && !ishidden && !is_command_token( message[ 0 ] ) )
 		{
 			continue;
@@ -739,9 +709,9 @@ can_use_multi_cmds()
 							COM_PRINTF( channel, "cmdinfo", message, self );
 						}
 						COM_PRINTF( channel, "cmdinfo", va( "Displaying page %s out of %s do /showmore or /page(num) to display more commands.", current_page, level.custom_commands_page_count ), self );
-						setup_temporary_command_listener( "listener_cmdlist", level.custom_commands_listener_timeout, self );
+						self setup_temporary_command_listener( "listener_cmdlist", level.custom_commands_listener_timeout );
 						result = self wait_temporary_command_listener( "listener_cmdlist" );
-						clear_temporary_command_listener( "listener_cmdlist", self );
+						self clear_temporary_command_listener( "listener_cmdlist" );
 						if ( result[ 0 ] == "timeout" )
 						{
 							return;
@@ -780,18 +750,19 @@ can_use_multi_cmds()
 	}
 }
 
-setup_temporary_command_listener( listener_name, timelimit, player )
+setup_temporary_command_listener( listener_name, timelimit )
 {
-	if ( !isDefined( player.temp_listeners ) )
+	if ( !isDefined( self.temp_listeners ) )
 	{
-		player.temp_listeners = [];
+		self.temp_listeners = [];
 	}
-	if ( !isDefined( player.temp_listeners[ listener_name ] ) )
+	if ( !isDefined( self.temp_listeners[ listener_name ] ) )
 	{
-		player.temp_listeners[ listener_name ] = spawnStruct();
-		player.temp_listeners[ listener_name ].data = [];
-		player.temp_listeners[ listener_name ].timeout = false;
-		player thread temporary_command_listener_timelimit( listener_name, timelimit );
+		self.temp_listeners[ listener_name ] = spawnStruct();
+		self.temp_listeners[ listener_name ].data = [];
+		self.temp_listeners[ listener_name ].timeout = false;
+		self thread temporary_command_listener_timelimit( listener_name, timelimit );
+		self thread clear_temporary_command_listener_on_cmd_reuse( listener_name );
 	}
 }
 
@@ -815,9 +786,15 @@ wait_temporary_command_listener( listener_name )
 	}
 }
 
-clear_temporary_command_listener( listener_name, player )
+clear_temporary_command_listener_on_cmd_reuse( listener_name )
 {
-	arrayRemoveIndex( player.temp_listeners, listener_name );
+	self waittill( listener_name );
+	arrayRemoveIndex( self.temp_listeners, listener_name, true );
+}
+
+clear_temporary_command_listener( listener_name )
+{
+	arrayRemoveIndex( self.temp_listeners, listener_name, true );
 }
 
 temporary_command_listener_timelimit( listener_name, timelimit )
