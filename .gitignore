@@ -1,4 +1,3 @@
 /.vscode
 /build
-/scripts
-/scripts/mp
+scripts/mp/T6_command_system_mp_main.gsc
