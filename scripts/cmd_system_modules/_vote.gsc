@@ -1,144 +1,25 @@
-#include maps/mp/zombies/_zm_utility;
-#include maps/mp/_utility;
 #include common_scripts/utility;
-#include scripts/zm/promod/plugin/commands;
-#include scripts/zm/promod/utility/_com;
-#include scripts/zm/promod/utility/_grief_util;
-#include scripts/zm/promod/utility/_text_parser;
+#include maps/mp/_utility;
+#include scripts/cmd_system_modules/_com;
+#include scripts/cmd_system_modules/_listener;
 
 VOTE_INIT()
 {
-	level.vote_timeout = 30;
-	level.vote_start_anonymous = getDvarIntDefault( "anonymous_vote_start", 1 );
+	level.vote_timeout = getDvarIntDefault( "tcs_vote_timelimit_seconds", 30 );
+	level.vote_start_anonymous = getDvarIntDefault( "tcs_anonymous_vote_start", 1 );
 	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
 	CMD_ADDCOMMANDLISTENER( "listener_vote", "yes" );
 	CMD_ADDCOMMANDLISTENER( "listener_vote", "no" );
 }
 
-VOTEABLE_CVARALL_PRE_f( arg_list )
+get_vote_threshold()
 {
-	name = arg_list[ 0 ];
-	dvar_name = arg_list[ 1 ];
-	new_value = arg_list[ 2 ];
-	result = [];
-	if ( isDefined( new_value ) && getDvar( dvar_name ) != "" )
+	num_players = level.players.size;
+	if ( num_players < 3 )
 	{
-		result[ "message" ] = va( "%s would like to set %s to %s", name, dvar_name, new_value );
-		result[ "channels" ] = "con say g_log";
-		result[ "filter" ] = "notitle";
+		 return 99;
 	}
-	else 
-	{
-		result[ "message" ] = "Cvarall set requires a valid <dvar name>, and <dvar value>.";
-		result[ "channels" ] = self COM_GET_CMD_FEEDBACK_CHANNEL();
-		result[ "filter" ] = "cmderror";
-	}
-	return result;
-}
-
-VOTEABLE_KICK_PRE_f( arg_list )
-{
-	name = arg_list[ 0 ];
-	player_data = find_player_in_server( arg_list[ 1 ] );
-	result = [];
-	if ( isDefined( player_data ) )
-	{
-		result[ "message" ] = va( "%s would like to kick %s", name, player_data[ "name" ] );
-		result[ "channels" ] = "con say g_log";
-		result[ "filter" ] = "notitle";
-	}
-	else 
-	{
-		result[ "message" ] = "Could not find player";
-		result[ "channels" ] = self COM_GET_CMD_FEEDBACK_CHANNEL();
-		result[ "filter" ] = "cmderror";
-	}
-	return result;
-}
-
-VOTEABLE_NEXTMAP_PRE_f( arg_list )
-{
-	name = arg_list[ 0 ];
-	rotation_data = find_map_data_from_alias( arg_list[ 1 ] );
-	result = [];
-	if ( rotation_data[ "mapname" ] != "" )
-	{
-		if ( sessionModeIsZombiesGame() )
-		{
-			display_name = get_ZM_map_display_name_from_location( rotation_data[ "location" ] );
-		}
-		else 
-		{
-			display_name = get_MP_map_name( rotation_data[ "mapname" ] );
-		}
-		result[ "message" ] = va( "%s would like to set the next map to %s", name, display_name );
-		result[ "channels" ] = "con say g_log";
-		result[ "filter" ] = "cmdinfo";
-	}
-	else 
-	{
-		result[ "message" ] = "Could not find map from alias";
-		result[ "channels" ] = self COM_GET_CMD_FEEDBACK_CHANNEL();
-		result[ "filter" ] = "cmderror";
-	}
-	return result;
-}
-
-VOTEABLE_CVARALL_POST_f( arg_list )
-{
-	args = [];
-	args[ 0 ] = arg_list[ 0 ];
-	args[ 1 ] = arg_list[ 1 ];
-	self CMD_EXECUTE( "admin", "cvarall", args );
-}
-
-VOTEABLE_KICK_POST_f( arg_list )
-{
-	args = [];
-	args[ 0 ] = arg_list[ 0 ];
-	self CMD_EXECUTE( "admin", "kick", args );
-}
-
-VOTEABLE_NEXTMAP_POST_f( arg_list )
-{
-	args = [];
-	args[ 0 ] = arg_list[ 0 ];
-	self CMD_EXECUTE( "admin", "nextmap", args );
-}
-
-VOTE_ADDVOTEABLE( vote_type_aliases, pre_vote_execute_func, post_vote_execute_func )
-{
-	if ( !isDefined( level.custom_votes ) )
-	{
-		level.custom_votes = [];
-	}
-	if ( !isDefined( level.custom_votes[ vote_type_aliases ] ) )
-	{
-		level.custom_votes[ vote_type_aliases ] = spawnStruct();
-		level.custom_votes[ vote_type_aliases ].pre_func = pre_vote_execute_func;
-		level.custom_votes[ vote_type_aliases ].post_func = post_vote_execute_func;
-	}
-}
-
-/*private*/ get_vote_threshold()
-{
-	switch ( level.players.size )
-	{
-		case 3:
-			return 2;
-		case 4:
-			return 3;
-		case 5:
-			return 4;
-		case 6:
-			return 4;
-		case 7:
-			return 5;
-		case 8:
-			return 5;
-		default:
-			return 99;
-	}
+	return ceil( num_players / 2 ) + 1;
 }
 
 vote_timeout_countdown()

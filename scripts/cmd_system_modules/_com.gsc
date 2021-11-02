@@ -1,9 +1,7 @@
-#include maps/mp/zombies/_zm_utility;
-#include maps/mp/_utility;
 #include common_scripts/utility;
-#include scripts/zm/promod/utility/_grief_util;
+#include maps/mp/_utility;
 
-/*private*/ COM_INIT()
+COM_INIT()
 {
 	COM_ADDFILTER( "info", 1 );
 	COM_ADDFILTER( "warning", 1 );
@@ -25,7 +23,7 @@
 	COM_ADDCHANNEL( "obituary", ::COM_OBITUARY );
 }
 
-/*private*/ COM_ADDFILTER( filter, default_value )
+COM_ADDFILTER( filter, default_value )
 {
 	if ( !isDefined( level.com_filters ) )
 	{
@@ -37,7 +35,7 @@
 	}
 }
 
-/*private*/ COM_ADDCHANNEL( channel, func )
+COM_ADDCHANNEL( channel, func )
 {
 	if ( !isDefined( level.com_channels ) )
 	{
@@ -49,37 +47,37 @@
 	}
 }
 
-/*public*/ COM_IS_FILTER_ACTIVE( filter )
+COM_IS_FILTER_ACTIVE( filter )
 {
 	return is_true( level.com_filters[ filter ] );
 }
 
-/*public*/ COM_IS_CHANNEL_ACTIVE( channel )
+COM_IS_CHANNEL_ACTIVE( channel )
 {
 	return isDefined( level.com_channels[ channel ] );
 }
 
-/*private*/ COM_CAPS_MSG_TITLE( filter )
+COM_CAPS_MSG_TITLE( filter )
 {
 	return filter != "notitle" ? va( "%s:", toUpper( filter ) ) : "";
 }
 
-/*private*/ COM_PRINT( channel, message, players )
+COM_PRINT( channel, message, players )
 {
 	print( message );
 }
 
-/*private*/ COM_LOGPRINT( channel, message, players )
+COM_LOGPRINT( channel, message, players )
 {
 	logPrint( message + "/n" );
 }
 
-/*private*/ COM_CONSOLELOGPRINT( channel, message, players )
+COM_CONSOLELOGPRINT( channel, message, players )
 {
 	//consoleLogPrint( message );
 }
 
-/*private*/ COM_IPRINTLN( channel, message, players )
+COM_IPRINTLN( channel, message, players )
 {
 	if ( array_validate( players ) )
 	{
@@ -101,7 +99,7 @@
 	}
 }
 
-/*private*/ COM_IPRINTLNBOLD( channel, message, players )
+COM_IPRINTLNBOLD( channel, message, players )
 {
 	if ( array_validate( players ) )
 	{
@@ -123,12 +121,12 @@
 	}
 }
 
-/*private*/ COM_SAY( channel, message, players )
+COM_SAY( channel, message, players )
 {
 	say( message );
 }
 
-/*private*/ COM_TELL( channel, message, players )
+COM_TELL( channel, message, players )
 {
 	if ( array_validate( players ) )
 	{
@@ -150,7 +148,7 @@
 	}
 }
 
-/*private*/ COM_OBITUARY( channel, message, players )
+COM_OBITUARY( channel, message, players )
 {
 	if ( array_validate( players ) )
 	{
@@ -164,7 +162,7 @@
 	}
 }
 
-/*public*/ COM_PRINTF( channels, filter, message, players )
+COM_PRINTF( channels, filter, message, players )
 {
 	channel_keys = strTok( channels, " " );
 	foreach ( channel in channel_keys )
@@ -184,7 +182,7 @@
 	}
 }
 
-/*public*/ COM_GET_CMD_FEEDBACK_CHANNEL()
+COM_GET_CMD_FEEDBACK_CHANNEL()
 {
 	return is_true( self.is_server ) ? "con" : "tell";
 }

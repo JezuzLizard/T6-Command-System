@@ -1,19 +1,13 @@
-#include maps/mp/zombies/_zm_utility;
-#include maps/mp/_utility;
 #include common_scripts/utility;
-#include maps/mp/zombies/_zm_laststand;
-#include scripts/zm/promod/plugin/commands;
-#include maps/mp/zombies/_zm;
-#include scripts/zm/promod/_teams;
-#include maps/mp/zombies/_zm_perks;
-#include scripts/zm/promod/utility/_text_parser;
+#include maps/mp/_utility;
+#include scripts/cmd_system_modules/_com;
 
-/*public*/ array_validate( array )
+array_validate( array )
 {
 	return isDefined( array ) && isArray( array ) && array.size > 0;
 }
 
-/*public*/ find_map_data_from_alias( alias )
+find_map_data_from_alias( alias )
 {
 	result = [];
 	if ( sessionModeIsZombiesGame() )
@@ -275,7 +269,7 @@
 	return result;
 }
 
-/*public*/ get_ZM_map_display_name_from_location_gametype( location, gametype )
+get_ZM_map_display_name_from_location_gametype( location, gametype )
 {
 	switch ( location )
 	{
@@ -313,7 +307,7 @@
 	}
 }
 
-/*public*/ get_MP_map_name( mapname )
+get_MP_map_name( mapname )
 {
 	switch ( mapname )
 	{
@@ -384,7 +378,7 @@
 	}
 }
 
-/*public*/ cast_to_vector( vector_string )
+cast_to_vector( vector_string )
 {
 	keys = strTok( vector_string, "," );
 	vector_array = [];
@@ -396,38 +390,9 @@
 	return vector;
 }
 
-/*private*/ add_new_dvar_command( dvar_name )
-{
-	if ( !isDefined( level.dvar_commands ) ) 
-	{
-		level.dvar_commands = [];
-	}
-	if ( !isDefined( level.dvar_commands[ dvar_name ] ) )
-	{
-		level.dvar_commands[ dvar_name ] = true;
-		setDvar( dvar_name, "" );
-	}
-}
-
-/*public*/ init_player_session_data()
-{
-	if ( !isDefined( level.players_in_session ) )
-	{
-		level.players_in_session = [];
-	}
-	if ( !isDefined( level.players_in_session[ self.name ] ) )
-	{
-		level.players_in_session[ self.name ] = spawnStruct();
-	}
-	if ( !isDefined( level.players_in_session[ self.name ].command_cooldown ) )
-	{
-		level.players_in_session[ self.name ].command_cooldown = 0;
-	}
-}
-
 server_safe_notify_thread( notify_name, index )
 {
-	wait( level.SERVER_FRAME * index );
+	wait( ( 0.05 * index ) + 0.05 );
 	level notify( notify_name );
 }
 
@@ -492,4 +457,304 @@ is_command_token( char )
 		}
 	}
 	return false;
+}
+
+remove_tokens_from_array( array, token )
+{
+	new_tokens = [];
+	foreach ( string in array )
+	{
+		if ( isSubStr( string, token ) )
+		{
+		}
+		else 
+		{
+			new_tokens[ new_tokens.size ] = string;
+		}
+	}
+	return new_tokens;
+}
+
+is_str_int( str )
+{
+	number_chars = "0123456789";
+	int_checks_passed = 0;
+	for ( i = 0; i < str.size; i++ )
+	{
+		if ( int_checks_passed != i )
+		{
+			break;
+		}
+		for ( j = 0; j < number_chars; j++ )
+		{
+			if ( str[ i ] == number_chars[ j ] )
+			{
+				int_checks_passed++;
+				break;
+			}
+		}
+	}
+	return int_checks_passed == str.size;
+}
+
+is_str_bool( str )
+{
+	if ( str == "false" || str == "true" )
+	{
+		return true;
+	}
+	return false;
+}
+
+is_str_float( str )
+{
+	number_chars = "0123456789";
+	decimals_found = 0;
+	float_checks_passed = 0;
+	for ( i = 0; i < str.size; i++ )
+	{
+		if ( float_checks_passed != i )
+		{
+			break;
+		}
+		for ( j = 0; j < number_chars; j++ )
+		{
+			if ( str[ i ] == number_chars[ j ] )
+			{
+				float_checks_passed++;
+				break;
+			}
+			else if ( str[ i ] == "." )
+			{
+				decimals_found++;
+				float_checks_passed++;
+				break;
+			}
+		}
+	}
+	if ( str.size <= 10 && decimals_found == 0 )
+	{
+		return false;
+	}
+	else if ( decimals_found > 1 )
+	{
+		return false;
+	}
+	return float_checks_passed == str.size;
+}
+
+is_str_vec( str )
+{
+	if ( !isSubStr( str, "," ) )
+	{
+		return false;
+	}
+	if ( str[ 0 ] != "(" && str[ str.size - 1 ] != ")" )
+	{
+		return false;
+	}
+	keys = strTok( str, "," );
+	if ( keys.size != 3 )
+	{
+		return false;
+	}
+	keys[ 2 ][ str.size - 1 ] = "";
+	keys[ 0 ][ 0 ] = "";
+	vec_checks_passed = 0;
+	for ( i = 0; i < keys.size; i++ )
+	{
+		if ( is_str_float( keys[ i ] ) || is_str_int( keys[ i ] ) )
+		{
+			vec_checks_passed++;
+		}
+	}
+	return vec_checks_passed == keys.size;
+}
+
+cast_str_to_vec( str )
+{
+	str[ str.size - 1 ] = "";
+	str[ 0 ] = "";
+	keys = strTok( str, "," );
+	return ( float( keys[ 0 ] ), float( keys[ 1 ] ), float( keys[ 2 ] ) );
+}
+
+cast_str_to_bool( str )
+{
+	return str == "true";
+}
+
+get_type( var )
+{
+	is_int = isInt( var );
+	is_float = isFloat( var );
+	is_vec = isVec( var );
+	if ( is_vec )
+	{
+		return "vec";
+	}
+	if ( ( var == 0 || var == 1 ) && is_int )
+	{
+		return "bool";
+	}
+	if ( is_int )
+	{
+		return "int";
+	}
+	if ( isString( var ) )
+	{
+		return "str";
+	}
+	if ( is_float )
+	{
+		return "float";
+	}
+}
+
+concatenate_array( array, delimiter )
+{
+	new_string = "";
+	foreach ( token in array )
+	{
+		new_string += token + delimiter;
+	}
+	return new_string;
+}
+
+clean_player_name_of_clantag( name )
+{
+	if ( isSubStr( name, "]" ) )
+	{
+		keys = strTok( name, "]" );
+		return keys[ 1 ];
+	}
+	return name;
+}
+
+cast_bool_to_str( bool, binary_string_options )
+{
+	options = strTok( binary_string_options, " " );
+	if ( options.size == 2 )
+	{
+		return bool ? options[ 0 ] : options[ 1 ];
+	}
+	return bool + "";
+}
+
+is_even( int )
+{
+	return int % 2 == 0;
+}
+
+is_odd( int )
+{
+	return int % 2 == 1;
+}
+
+CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_cmd )
+{
+	if ( !isDefined( level.custom_commands ) )
+	{
+		level.custom_commands = [];
+	}
+	if ( !isDefined( level.custom_commands[ namespace_aliases ] ) )
+	{
+		level.custom_commands[ namespace_aliases ] = [];
+		level.custom_commands_namespaces_total++;
+	}
+	if ( !isDefined( level.custom_commands[ namespace_aliases ][ cmdaliases ] ) )
+	{
+		level.custom_commands[ namespace_aliases ][ cmdaliases ] = spawnStruct();
+		level.custom_commands[ namespace_aliases ][ cmdaliases ].usage = cmd_usage;
+		level.custom_commands[ namespace_aliases ][ cmdaliases ].func = cmdfunc;
+		level.custom_commands_total++;
+		if ( isInt( level.custom_commands_total / 6 ) )
+		{
+			level.custom_commands_page_count++;
+		}
+		if ( is_true( is_threaded_cmd ) )
+		{
+			level.custom_threaded_commands[ cmdaliases ] = true;
+		}
+	}
+	else 
+	{
+		COM_PRINTF( "con con_log", "error", va( "Command %s is already defined in namespace %s", cmdaliases, namespace_aliases ) );
+	}
+}
+
+VOTE_ADDVOTEABLE( vote_type_aliases, pre_vote_execute_func, post_vote_execute_func )
+{
+	if ( !isDefined( level.custom_votes ) )
+	{
+		level.custom_votes = [];
+	}
+	if ( !isDefined( level.custom_votes[ vote_type_aliases ] ) )
+	{
+		level.custom_votes[ vote_type_aliases ] = spawnStruct();
+		level.custom_votes[ vote_type_aliases ].pre_func = pre_vote_execute_func;
+		level.custom_votes[ vote_type_aliases ].post_func = post_vote_execute_func;
+	}
+}
+
+CMD_EXECUTE( namespace, cmdname, arg_list )
+{
+	indexable_cmdname = "";
+	is_threaded_cmd = false;
+	if ( namespace != "" )
+	{
+		cmd_keys = getArrayKeys( level.custom_commands[ namespace ] );
+		cmd_keys_index = get_alias_index( cmdname, cmd_keys );
+		if ( cmd_keys_index != -1 )
+		{
+			indexable_cmdname = cmd_keys[ cmd_keys_index ];
+			if ( is_true( level.custom_threaded_commands[ indexable_cmdname ] ) )
+			{
+				is_threaded_cmd = true;
+			}
+		}
+	}
+	can_execute_cmd = indexable_cmdname != "";
+	if ( can_execute_cmd )
+	{
+		if ( is_threaded_cmd )
+		{
+			self thread [[ level.custom_commands[ namespace ][ indexable_cmdname ].func ]]( arg_list );
+		}
+		else 
+		{
+			result = self [[ level.custom_commands[ namespace ][ indexable_cmdname ].func ]]( arg_list );
+		}
+	}
+	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
+	if ( isDefined( result ) && result[ "filter" ] != "cmderror" )
+	{
+		cmd_log = self.name + " executed " + result[ "message" ];
+		COM_PRINTF( "g_log", result[ "filter" ], cmd_log, self );
+		if ( isDefined( result[ "channels" ] ) )
+		{
+			COM_PRINTF( result[ "channels" ], result[ "filter" ], message, self );
+		}
+		else 
+		{
+			COM_PRINTF( channel, result[ "filter" ], message, self );
+		}
+	}
+	else if ( !is_threaded_cmd )
+	{
+		if ( namespace == "" )
+		{
+			COM_PRINTF( channel, "cmderror", "Command bad namespace", self );
+		}
+		else if ( indexable_cmdname == "" )
+		{
+			COM_PRINTF( channel, "cmderror", "Command not found in namespace", self );
+			COM_PRINTF( channel, "cmdinfo", "Got:" + namespace, self );
+		}
+		else 
+		{
+			message = self.name + " executed " + result[ "message" ];
+			COM_PRINTF( channel, result[ "filter" ], message, self );
+		}
+	}
 }
