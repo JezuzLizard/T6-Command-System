@@ -1,3 +1,22 @@
+#include scripts/cmd_system_modules/_cmd_util;
+#include scripts/cmd_system_modules/_com;
+#include scripts/cmd_system_modules/_listener;
+#include scripts/cmd_system_modules/_perms;
+#include scripts/cmd_system_modules/_text_parser;
+
+#include common_scripts/utility;
+#include maps/mp/_utility;
+
+VOTE_INIT()
+{
+	level.vote_timeout = getDvarIntDefault( "tcs_vote_timelimit_seconds", 30 );
+	level.vote_start_anonymous = getDvarIntDefault( "tcs_anonymous_vote_start", 1 );
+	CMD_ADDCOMMANDLISTENER( "listener_vote", "yes" );
+	CMD_ADDCOMMANDLISTENER( "listener_vote", "no" );
+	VOTE_ADDVOTEABLE( "cvarall ca", ::VOTEABLE_CVARALL_PRE_f, ::VOTEABLE_CVARALL_POST_f );
+	VOTE_ADDVOTEABLE( "kick k", ::VOTEABLE_KICK_PRE_f, ::VOTEABLE_KICK_POST_f );
+	VOTE_ADDVOTEABLE( "nextmap nm", ::VOTEABLE_NEXTMAP_PRE_f, ::VOTEABLE_NEXTMAP_POST_f );
+}
 
 VOTEABLE_CVARALL_PRE_f( arg_list )
 {
@@ -49,7 +68,7 @@ VOTEABLE_NEXTMAP_PRE_f( arg_list )
 	{
 		if ( sessionModeIsZombiesGame() )
 		{
-			display_name = get_ZM_map_display_name_from_location( rotation_data[ "location" ] );
+			display_name = get_ZM_map_display_name_from_location_gametype( rotation_data[ "location" ], rotation_data[ "gametype" ] );
 		}
 		else 
 		{

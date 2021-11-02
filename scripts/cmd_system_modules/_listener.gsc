@@ -1,5 +1,6 @@
 #include common_scripts/utility;
 #include maps/mp/_utility;
+#include scripts/cmd_system_modules/_cmd_util;
 #include scripts/cmd_system_modules/_com;
 
 CMD_ADDCOMMANDLISTENER( listener_name, listener_cmd )
@@ -18,6 +19,11 @@ CMD_ADDCOMMANDLISTENER( listener_name, listener_cmd )
 	}
 }
 
+CMD_ISCOMMANDLISTENER_ACTIVE_PLAYER( listener_name)
+{
+	return is_true( self.cmd_listeners[ listener_name ].active );
+}
+
 CMD_ISCOMMANDLISTENER( listener_name, listener_cmd )
 {
 	return is_true( level.listener_commands[ listener_name ][ listener_cmd ] );
@@ -25,38 +31,41 @@ CMD_ISCOMMANDLISTENER( listener_name, listener_cmd )
 
 CMD_EXECUTELISTENER( listener_name, arg_list )
 {
-	self.temp_listeners[ listener_name ].data = arg_list;
+	self.cmd_listeners[ listener_name ].data = arg_list;
 }
 
-setup_temporary_command_listener( listener_name, timelimit )
+setup_command_listener( listener_name )
 {
-	if ( !isDefined( self.temp_listeners ) )
+	if ( !isDefined( self.cmd_listeners ) )
 	{
-		self.temp_listeners = [];
+		self.cmd_listeners = [];
 	}
-	if ( !isDefined( self.temp_listeners[ listener_name ] ) )
+	if ( !isDefined( self.cmd_listeners[ listener_name ] ) )
 	{
-		self.temp_listeners[ listener_name ] = spawnStruct();
-		self.temp_listeners[ listener_name ].data = [];
-		self.temp_listeners[ listener_name ].timeout = false;
-		self thread temporary_command_listener_timelimit( listener_name, timelimit );
-		self thread clear_temporary_command_listener_on_cmd_reuse( listener_name );
+		self.cmd_listeners[ listener_name ] = spawnStruct();
 	}
+	self.cmd_listeners[ listener_name ].data = [];
+	self.cmd_listeners[ listener_name ].timeout = false;
+	self.cmd_listeners[ listener_name ].active = true;
+	self thread command_listener_timelimit( listener_name );
+	self thread clear_command_listener_on_cmd_reuse( listener_name );
 }
 
-wait_temporary_command_listener( listener_name )
+wait_command_listener( listener_name )
 {
 	self endon( listener_name );
 	result = [];
 	while ( true )
 	{
-		if ( array_validate( self.temp_listeners[ listener_name ].data ) )
+		if ( array_validate( self.cmd_listeners[ listener_name ].data ) )
 		{
-			result = self.temp_listeners[ listener_name ].data;
+			print( "array validated" );
+			result = self.cmd_listeners[ listener_name ].data;
 			return result;
 		}
-		else if ( self.temp_listeners[ listener_name ].timeout )
+		else if ( self.cmd_listeners[ listener_name ].timeout )
 		{
+			print( "timeout" );
 			result[ 0 ] = "timeout";
 			return result;
 		}
@@ -64,23 +73,23 @@ wait_temporary_command_listener( listener_name )
 	}
 }
 
-clear_temporary_command_listener_on_cmd_reuse( listener_name )
+clear_command_listener_on_cmd_reuse( listener_name )
 {
 	self waittill( listener_name );
-	arrayRemoveIndex( self.temp_listeners, listener_name, true );
+	self.cmd_listeners[ listener_name ].active = false;
 }
 
-clear_temporary_command_listener( listener_name )
+clear_command_listener( listener_name )
 {
-	arrayRemoveIndex( self.temp_listeners, listener_name, true );
+	self.cmd_listeners[ listener_name ].active = false;
 }
 
-temporary_command_listener_timelimit( listener_name, timelimit )
+command_listener_timelimit( listener_name )
 {
 	self endon( listener_name );
-	for ( i = timelimit; i > 0; i-- )
+	for ( i = level.custom_commands_listener_timeout; i > 0; i-- )
 	{
 		wait 1;
 	}
-	self.temp_listeners[ listener_name ].timeout = true;
+	self.cmd_listeners[ listener_name ].timeout = true;
 }

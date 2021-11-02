@@ -37,6 +37,7 @@ find_map_data_from_alias( alias )
 				mapname = "zm_tomb";
 				break;
 			case "buried":
+			case "processing":
 				gamemode = "classic";
 				location = "processing";
 				mapname = "zm_buried";
@@ -47,6 +48,7 @@ find_map_data_from_alias( alias )
 				gamemode = "standard";
 				location = "nuked";
 				mapname = "zm_nuked";
+				break;
 			case "gc":
 			case "gcell":
 			case "gblock":
@@ -402,37 +404,69 @@ find_player_in_server( clientnum_guid_or_name )
 	if ( is_str_int( clientnum_guid_or_name ) && int( clientnum_guid_or_name ) < getDvarInt( "sv_maxclients" ) )
 	{
 		client_num = int( clientnum_guid_or_name );
+		enum = 0;
 	}
 	else if ( is_str_int( clientnum_guid_or_name ) )
 	{
 		GUID = int( clientnum_guid_or_name );
+		enum = 1;
 	}
 	else 
 	{
 		name = clientnum_guid_or_name;
+		enum = 2;
 	}
 	player_data = [];
-	foreach ( player in level.players )
+	switch ( enum )
 	{
-		if ( isDefined( name ) && clean_player_name_of_clantag( player.name ) == clean_player_name_of_clantag( name ) || isDefined( name ) && isSubStr( player.name, name ) || isDefined( client_num ) && player getEntityNumber() == client_num || player getGUID() == GUID )
-		{
-			player_data[ "name" ] = player.name;
-			player_data[ "guid" ] = player getGUID();
-			player_data[ "clientnum" ] = player getEntityNumber();
-			return player_data;
-		}
+		case 0:
+			foreach ( player in level.players )
+			{
+				if ( player getEntityNumber() == client_num )
+				{
+					player_data[ "name" ] = player.name;
+					player_data[ "guid" ] = player getGUID();
+					player_data[ "clientnum" ] = player getEntityNumber();
+					return player_data;
+				}
+			}
+			break;
+		case 1:
+			foreach ( player in level.players )
+			{
+				if ( player getGUID() == GUID )
+				{
+					player_data[ "name" ] = player.name;
+					player_data[ "guid" ] = player getGUID();
+					player_data[ "clientnum" ] = player getEntityNumber();
+					return player_data;
+				}
+			}
+			break;
+		case 2:
+			foreach ( player in level.players )
+			{
+				if ( clean_player_name_of_clantag( player.name ) == clean_player_name_of_clantag( name ) || isSubStr( player.name, name ) )
+				{
+					player_data[ "name" ] = player.name;
+					player_data[ "guid" ] = player getGUID();
+					player_data[ "clientnum" ] = player getEntityNumber();
+					return player_data;
+				}
+			}
+			break;
 	}
 	return undefined;
 }
 
 get_alias_index( alias, array_of_aliases )
 {
-	foreach ( alias_group in array_of_aliases )
+	for ( i = 0; i < array_of_aliases.size; i++ )
 	{
-		alias_keys = strTok( alias_group, " " );
-		for ( i = 0; i < alias_keys.size; i++ )
+		alias_keys = strTok( array_of_aliases[ i ], " " );
+		for ( j = 0; j < alias_keys.size; j++ )
 		{
-			if ( alias == alias_leys[ i ] )
+			if ( alias == alias_keys[ j ] )
 			{
 				return i;
 			}
@@ -444,7 +478,7 @@ get_alias_index( alias, array_of_aliases )
 getDvarStringDefault( dvarname, default_value )
 {
 	cur_dvar_value = getDvar( dvarname );
-	return cur_dvar_value != "" ? cur_dvar_value : default_value;
+	return terop( cur_dvar_value != "", cur_dvar_value, default_value );
 }
 
 is_command_token( char )
@@ -457,6 +491,18 @@ is_command_token( char )
 		}
 	}
 	return false;
+}
+
+terop( arg, val1, val2 )
+{
+	if ( arg )
+	{
+		return val1;
+	}
+	else 
+	{
+		return val2;
+	}
 }
 
 remove_tokens_from_array( array, token )
@@ -636,7 +682,7 @@ cast_bool_to_str( bool, binary_string_options )
 	options = strTok( binary_string_options, " " );
 	if ( options.size == 2 )
 	{
-		return bool ? options[ 0 ] : options[ 1 ];
+		return terop( bool, options[ 0 ], options[ 1 ] );
 	}
 	return bool + "";
 }
@@ -653,10 +699,6 @@ is_odd( int )
 
 CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_cmd )
 {
-	if ( !isDefined( level.custom_commands ) )
-	{
-		level.custom_commands = [];
-	}
 	if ( !isDefined( level.custom_commands[ namespace_aliases ] ) )
 	{
 		level.custom_commands[ namespace_aliases ] = [];
@@ -668,7 +710,7 @@ CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_c
 		level.custom_commands[ namespace_aliases ][ cmdaliases ].usage = cmd_usage;
 		level.custom_commands[ namespace_aliases ][ cmdaliases ].func = cmdfunc;
 		level.custom_commands_total++;
-		if ( isInt( level.custom_commands_total / 6 ) )
+		if ( ceil( level.custom_commands_total / level.custom_commands_page_max ) > level.custom_commands_page_count )
 		{
 			level.custom_commands_page_count++;
 		}
@@ -679,7 +721,7 @@ CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_c
 	}
 	else 
 	{
-		COM_PRINTF( "con con_log", "error", va( "Command %s is already defined in namespace %s", cmdaliases, namespace_aliases ) );
+		COM_PRINTF( "con con_log", "screrror", va( "Command %s is already defined in namespace %s", cmdaliases, namespace_aliases ) );
 	}
 }
 
@@ -748,13 +790,11 @@ CMD_EXECUTE( namespace, cmdname, arg_list )
 		}
 		else if ( indexable_cmdname == "" )
 		{
-			COM_PRINTF( channel, "cmderror", "Command not found in namespace", self );
-			COM_PRINTF( channel, "cmdinfo", "Got:" + namespace, self );
+			COM_PRINTF( channel, "cmderror", va( "Command %s not found in namespace %s", cmdname, namespace ), self );
 		}
 		else 
 		{
-			message = self.name + " executed " + result[ "message" ];
-			COM_PRINTF( channel, result[ "filter" ], message, self );
+			COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
 		}
 	}
 }

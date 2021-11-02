@@ -9,7 +9,7 @@
 
 CMD_RANDOMNEXTMAP_f( arg_list )
 {
-	string = "c s f t b d tu p";
+	string = getDvarStringDefault( "tcs_random_map_list", "prison rooftop tomb processing nuked gcellblock gstreet gfarm gtown gdepot gdiner gtunnel gpower sfarm stown sdepot sdiner stunnel spower" );
 	alias_keys = strTok( string, " " );
 	random_alias = random( alias_keys );
 	rotation_data = find_map_data_from_alias( random_alias );
@@ -19,7 +19,7 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 	}
 	else 
 	{
-		rotation_string = va( "exec %s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "mapname" ] );
+		rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
 	}
 	setDvar( "sv_maprotation", rotation_string );
 	setDvar( "sv_maprotationCurrent", rotation_string );
@@ -53,7 +53,7 @@ CMD_NEXTMAP_f( arg_list )
 			else 
 			{
 				display_name = get_MP_map_name( rotation_data[ "mapname" ] );
-				rotation_string = va( "exec %s.cfg map %s", rotation_data[ "gamemode" ], rotation_data[ "mapname" ] );
+				rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
 			}
 			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
@@ -134,36 +134,17 @@ CMD_ADMIN_KICK_f( arg_list )
 	if ( kicked )
 	{
 		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "admin:kick: Successfully kicked %s", player.name );
+		result[ "message" ] = va( "admin:kick: Successfully kicked %s", player_data[ "name" ] );
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = va( "admin:kick: Failed to kick %s", player.name );
+		result[ "message" ] = "admin:kick: Could not find player";
 	}
 	return result;
 }
 
-CMD_ADMIN_CVAR_f( arg_list )
-{
-	result = [];
-	if ( array_validate( arg_list ) && arg_list.size == 2 )
-	{
-		dvar_name = arg_list[ 0 ];
-		dvar_value = arg_list[ 1 ];
-		self setClientDvar( dvar_name, dvar_value );
-		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "client:cvar: Successfully set %s %s to %s", self.name, dvar_name, dvar_value );
-	}
-	else 
-	{
-		result[ "filter" ] = "cmderror";
-		result[ "message" ] = va( "client:cvar: Failed to set cvar for %s due to missing params", self.name );
-	}
-	return result;
-}
-
-CMD_CLIENT_CVARALL_f( arg_list )
+CMD_CVARALL_f( arg_list )
 {
 	result = [];
 	if ( array_validate( arg_list ) && arg_list.size == 2 )
@@ -180,7 +161,42 @@ CMD_CLIENT_CVARALL_f( arg_list )
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = va( "admin:cvarall: Failed to set cvar for all players due to missing params", self.name );
+		result[ "message" ] = "admin:cvarall: Failed to set cvar for all players due to missing params";
+	}
+	return result;
+}
+
+CMD_CVAR_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) && arg_list.size == 3 )
+	{
+		player_data = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( player_data ) )
+		{
+			foreach ( player in level.players )
+			{
+				if ( player getGUID() == player_data[ "guid" ] )
+				{
+					dvar_name = arg_list[ 1 ];
+					dvar_value = arg_list[ 2 ];
+					player setClientDvar( dvar_name, dvar_value );
+					result[ "filter" ] = "cmdinfo";
+					result[ "message" ] = va( "client:cvar: Successfully set %s %s to %s", player_data[ "name" ], dvar_name, dvar_value );
+					break;
+				}
+			}
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "client:cvar: Could not find player";
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "client:cvar: Failed to set cvar due to missing params";
 	}
 	return result;
 }

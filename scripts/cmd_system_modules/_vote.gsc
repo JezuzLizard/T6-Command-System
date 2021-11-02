@@ -1,16 +1,8 @@
 #include common_scripts/utility;
 #include maps/mp/_utility;
+#include scripts/cmd_system_modules/_cmd_util;
 #include scripts/cmd_system_modules/_com;
 #include scripts/cmd_system_modules/_listener;
-
-VOTE_INIT()
-{
-	level.vote_timeout = getDvarIntDefault( "tcs_vote_timelimit_seconds", 30 );
-	level.vote_start_anonymous = getDvarIntDefault( "tcs_anonymous_vote_start", 1 );
-	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
-	CMD_ADDCOMMANDLISTENER( "listener_vote", "yes" );
-	CMD_ADDCOMMANDLISTENER( "listener_vote", "no" );
-}
 
 get_vote_threshold()
 {
@@ -33,9 +25,9 @@ vote_timeout_countdown()
 
 player_track_vote()
 {
-	setup_temporary_command_listener( "listener_vote", level.vote_timeout, self );
-	self waittill( "listener_vote", result, args );
-	clear_temporary_command_listener( "listener_vote", self );
+	self setup_command_listener( "listener_vote", level.vote_timeout );
+	result = self wait_command_listener( "listener_vote" );
+	self clear_command_listener( "listener_vote" );
 	if ( result == "timeout" )
 	{
 		return;

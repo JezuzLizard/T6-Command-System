@@ -110,7 +110,7 @@ CMD_CHANGEMAP_f( arg_list )
 				rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
 			}
 			message = va( "admin:changemap: %s second rotate to map %s countdown started", level.custom_commands_restart_countdown, display_name );
-			COM_PRINTF( "g_log say con", "cmdinfo", self.name + " executed " + message );
+			COM_PRINTF( "say con", "cmdinfo", self.name + " executed " + message );
 			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
@@ -132,7 +132,7 @@ CMD_ROTATE_f( arg_list )
 	self notify( "rotate_f" );
 	self endon( "rotate_f" );
 	message = va( "admin:rotate: %s second rotate countdown started", level.custom_commands_restart_countdown );
-	COM_PRINTF( "g_log say con" + channel, "cmdinfo", self.name + " executed " + message );
+	COM_PRINTF( "say con" + channel, "cmdinfo", self.name + " executed " + message );
 	for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 	{
 		wait 1;
@@ -148,7 +148,7 @@ CMD_RESTART_f( arg_list )
 	self notify( "restart_f" );
 	self endon( "restart_f" );
 	message = va( "admin:restart: %s second restart countdown started", level.custom_commands_restart_countdown );
-	COM_PRINTF( "g_log say con", "cmdinfo", self.name + " executed " + message );
+	COM_PRINTF( "say con", "cmdinfo", self.name + " executed " + message );
 	for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 	{
 		wait 1;
@@ -180,30 +180,31 @@ CMD_PLAYERLIST_f( arg_list )
 	}
 	remaining_players = players.size;
 	remaining_pages = ceil( remaining_players / level.custom_commands_page_max );
-	for ( j = 0; j < players.size; j++ )
+	for ( i = 0; i < players.size; i++ )
 	{
-		message = va( "^3%s ^2%s ^4%s", players[ i ].name, players[ i ] getGUID(), players[ i ] getEntityNumber() ); //remember to add rank as a listing option
 		if ( channel == "con" )
 		{
+			message = va( "%s %s %s", players[ i ].name, players[ i ] getGUID(), players[ i ] getEntityNumber() ); //remember to add rank as a listing option
 			COM_PRINTF( channel, "cmdinfo", message, self );
 		}
 		else 
 		{
-			cmds_to_display[ cmds_to_display.size ] = message;
+			message = va( "^3%s ^2%s ^4%s", players[ i ].name, players[ i ] getGUID(), players[ i ] getEntityNumber() ); //remember to add rank as a listing option
+			players_to_display[ players_to_display.size ] = message;
 		}
 		remaining_players--;
-		if ( ( cmds_to_display.size > remaining_pages ) && channel == "tell" && remaining_players != 0 )
+		if ( ( players_to_display.size > remaining_pages ) && channel == "tell" && remaining_players != 0 )
 		{
 			if ( current_page == user_defined_page )
 			{
-				foreach ( message in cmds_to_display )
+				foreach ( message in players_to_display )
 				{
 					COM_PRINTF( channel, "cmdinfo", message, self );
 				}
 				COM_PRINTF( channel, "cmdinfo", va( "Displaying page %s out of %s do /showmore or /page(num) to display more players.", current_page, remaining_pages ), self );
-				self setup_temporary_command_listener( "listener_playerlist", level.custom_commands_listener_timeout );
-				result = self wait_temporary_command_listener( listener_name )
-				self clear_temporary_command_listener( "listener_playerlist" );
+				self setup_command_listener( "listener_playerlist" );
+				result = self wait_command_listener( "listener_playerlist" );
+				self clear_command_listener( "listener_playerlist" );
 				if ( result[ 0 ] == "timeout" )
 				{
 					return;
@@ -228,11 +229,11 @@ CMD_PLAYERLIST_f( arg_list )
 				}
 			}
 			current_page++;
-			cmds_to_display = [];
+			players_to_display = [];
 		}
 		else if ( remaining_players == 0 )
 		{
-			foreach ( message in cmds_to_display )
+			foreach ( message in players_to_display )
 			{
 				COM_PRINTF( channel, "cmdinfo", message, self );
 			}
@@ -252,9 +253,9 @@ CMD_UTILITY_CMDLIST_f( arg_list )
 	current_page = 1;
 	user_defined_page = 1;
 	remaining_cmds = level.custom_commands_total;
-	for ( i = 0; i < level.custom_commands_namespaces_total; i++ )
+	for ( i = 0; i < namespace_keys.size; i++ )
 	{
-		if ( !isDefined( namespace_filter ) || isSubStr( namespace_filter, namespace_keys[ i ] ) )
+		if ( !isDefined( namespace_filter ) || isSubStr( namespace_keys[ i ], namespace_filter ) )
 		{
 			namespace_aliases = strTok( namespace_keys[ i ], " " );
 			cmdnames = getArrayKeys( level.custom_commands[ namespace_keys[ i ] ] );
@@ -283,9 +284,9 @@ CMD_UTILITY_CMDLIST_f( arg_list )
 							COM_PRINTF( channel, "cmdinfo", message, self );
 						}
 						COM_PRINTF( channel, "cmdinfo", va( "Displaying page %s out of %s do /showmore or /page(num) to display more commands.", current_page, level.custom_commands_page_count ), self );
-						self setup_temporary_command_listener( "listener_cmdlist", level.custom_commands_listener_timeout );
-						result = self wait_temporary_command_listener( "listener_cmdlist" );
-						self clear_temporary_command_listener( "listener_cmdlist" );
+						self setup_command_listener( "listener_cmdlist" );
+						result = self wait_command_listener( "listener_cmdlist" );
+						self clear_command_listener( "listener_cmdlist" );
 						if ( result[ 0 ] == "timeout" )
 						{
 							return;
