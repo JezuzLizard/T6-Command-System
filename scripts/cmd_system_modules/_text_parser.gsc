@@ -12,35 +12,15 @@
 	multi_cmds = [];
 	command_keys = [];
 	multiple_cmds_keys = strTok( message, ";" );
-	print( va( "message %s", multiple_cmds_keys[ 0 ] ) );
 	for ( i = 0; i < multiple_cmds_keys.size; i++ )
 	{
-		message = multiple_cmds_keys[ i ];
-		command_keys[ "cmdname" ] = "";
+		cmd_args = strTok( multiple_cmds_keys[ i ], " " );
+		command_keys[ "namespace" ] = get_cmd_namespace( cmd_args[ 0 ] );
+		namespace_and_cmdname = strTok( cmd_args[ 0 ], ":" );
+		command_keys[ "cmdname" ] = namespace_and_cmdname[ 1 ];
+		arrayRemoveIndex( cmd_args, 0 );
 		command_keys[ "args" ] = [];
-		command_keys[ "namespace" ] = get_cmd_namespace( message );
-		buffer_index = 0;
-		for ( ; command_keys[ "namespace" ] != "" && buffer_index < ( command_keys[ "namespace" ].size + 2 ); buffer_index++ )
-		{
-		}
-		for ( ; isDefined( message[ buffer_index ] ) && message[ buffer_index ] != " " && message[ buffer_index ] != ""; buffer_index++ )
-		{
-			command_keys[ "cmdname" ] += message[ buffer_index ];
-		}
-		for ( ; isDefined( message[ buffer_index ] ); buffer_index++ )
-		{
-			if ( message[ buffer_index ] == " " )
-			{
-				command_keys[ "args" ][ command_keys[ "args" ].size ] = "";
-			}
-			else 
-			{
-				for ( ; isDefined( message[ buffer_index ] ) && message[ buffer_index ] != "" && message[ buffer_index ] != " "; buffer_index++ )
-				{
-					command_keys[ "args" ][ command_keys[ "args" ].size - 1 ] += message[ buffer_index ];
-				}
-			}
-		}
+		command_keys[ "args" ] = cmd_args;
 		multi_cmds[ multi_cmds.size ] = command_keys;
 	}
 	return multi_cmds;
