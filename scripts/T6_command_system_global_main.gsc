@@ -1,7 +1,7 @@
 
 #include scripts/cm_system_modules/global_commands;
 
-CMD_INIT()
+main()
 {
 	if ( getDvar( "sv_maprotation_old" ) == "" )
 	{
@@ -13,6 +13,14 @@ CMD_INIT()
 	level.server.is_server = true;
 	level.server.channel = "con";
 	level.custom_commands_restart_countdown = 5;
+	level.custom_commands_namespaces_total = 0;
+	level.custom_commands_total = 0;
+	level.custom_commands_page_count = 0;
+	level.custom_commands_page_max = 5;
+	level.custom_commands_listener_timeout = getDvarIntDefault( "T6_CMD_LISTENER_TIMEOUT", 12 );
+	level.custom_commands_cooldown_time = getDvarIntDefault( "T6_CMD_CD", 5 );
+	level.custom_commands_tokens = getDvarStringDefault( "cmd_api_tokens", "/" ); //separated by spaces, good tokens are generally not used at the start of a message 
+	// "/" is recommended for anonymous command usage, other tokens are not anonymous
 	CMD_ADDCOMMAND( "utility u", "cmdlist cl", "utility:cmdlist", ::CMD_UTILITY_CMDLIST_f, true );
 	CMD_ADDCOMMAND( "client c", "cvar cv", "client:cvar <cvarname> <newval>", ::CMD_CLIENT_CVAR_f );
 	CMD_ADDCOMMAND( "admin a", "kick k", "admin:kick <name|guid|clientnum>", ::CMD_ADMIN_KICK_f );
