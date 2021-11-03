@@ -25,7 +25,7 @@ vote_timeout_countdown()
 
 player_track_vote()
 {
-	self setup_command_listener( "listener_vote", level.vote_timeout );
+	self setup_command_listener( "listener_vote" );
 	result = self wait_command_listener( "listener_vote" );
 	self clear_command_listener( "listener_vote" );
 	if ( result == "timeout" )

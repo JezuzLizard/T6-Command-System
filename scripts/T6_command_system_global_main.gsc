@@ -109,7 +109,6 @@ COMMAND_BUFFER()
 			{
 				if ( CMD_ISCOMMANDLISTENER( listener, cmdname ) )
 				{
-					print( listener );
 					player CMD_EXECUTELISTENER( listener, listener_cmds_args );
 					found_listener = true;
 					break;

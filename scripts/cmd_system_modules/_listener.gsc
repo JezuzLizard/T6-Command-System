@@ -59,13 +59,11 @@ wait_command_listener( listener_name )
 	{
 		if ( array_validate( self.cmd_listeners[ listener_name ].data ) )
 		{
-			print( "array validated" );
 			result = self.cmd_listeners[ listener_name ].data;
 			return result;
 		}
-		else if ( self.cmd_listeners[ listener_name ].timeout )
+		else if ( !self.cmd_listeners[ listener_name ].active )
 		{
-			print( "timeout" );
 			result[ 0 ] = "timeout";
 			return result;
 		}
@@ -81,15 +79,17 @@ clear_command_listener_on_cmd_reuse( listener_name )
 
 clear_command_listener( listener_name )
 {
+	self notify( va( "%s_timeout_reset", listener_name ) );
 	self.cmd_listeners[ listener_name ].active = false;
 }
 
 command_listener_timelimit( listener_name )
 {
 	self endon( listener_name );
+	self endon( va( "%s_timeout_reset", listener_name ) );
 	for ( i = level.custom_commands_listener_timeout; i > 0; i-- )
 	{
 		wait 1;
 	}
-	self.cmd_listeners[ listener_name ].timeout = true;
+	self.cmd_listeners[ listener_name ].active = false;
 }

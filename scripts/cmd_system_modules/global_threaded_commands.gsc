@@ -110,12 +110,12 @@ CMD_CHANGEMAP_f( arg_list )
 				rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
 			}
 			message = va( "admin:changemap: %s second rotate to map %s countdown started", level.custom_commands_restart_countdown, display_name );
-			COM_PRINTF( "say con", "cmdinfo", self.name + " executed " + message );
+			COM_PRINTF( "say con", "notitle", self.name + " executed " + message );
 			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 			{
-				COM_PRINTF( "con say", "cmdinfo", va( "%s seconds", i ) );
+				COM_PRINTF( "con say", "notitle", va( "%s seconds", i ) );
 				wait 1;
 			}
 			level notify( "end_commands" );
@@ -132,11 +132,11 @@ CMD_ROTATE_f( arg_list )
 	self notify( "rotate_f" );
 	self endon( "rotate_f" );
 	message = va( "admin:rotate: %s second rotate countdown started", level.custom_commands_restart_countdown );
-	COM_PRINTF( "say con" + channel, "cmdinfo", self.name + " executed " + message );
+	COM_PRINTF( "say con" + channel, "notitle", self.name + " executed " + message );
 	for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 	{
 		wait 1;
-		COM_PRINTF( "con say", "cmdinfo", va( "%s seconds", i ) );
+		COM_PRINTF( "con say", "notitle", va( "%s seconds", i ) );
 	}
 	level notify( "end_commands" );
 	wait 0.5;
@@ -148,11 +148,11 @@ CMD_RESTART_f( arg_list )
 	self notify( "restart_f" );
 	self endon( "restart_f" );
 	message = va( "admin:restart: %s second restart countdown started", level.custom_commands_restart_countdown );
-	COM_PRINTF( "say con", "cmdinfo", self.name + " executed " + message );
+	COM_PRINTF( "say con", "notitle", self.name + " executed " + message );
 	for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 	{
 		wait 1;
-		COM_PRINTF( "con say", "cmdinfo", va( "%s seconds", i ) );
+		COM_PRINTF( "con say", "notitle", va( "%s seconds", i ) );
 	}
 	level notify( "end_commands" );
 	wait 0.5;
@@ -170,9 +170,17 @@ CMD_PLAYERLIST_f( arg_list )
 	{
 		team_name = arg_list[ 0 ];
 	}
-	if ( isDefined( team_name ) && isDefined( level.teams[ team_name ] ) )
+	if ( isDefined( team_name ) )
 	{
-		players = getPlayers( team_name );
+		if ( isDefined( level.teams[ team_name ] ) )
+		{
+			players = getPlayers( team_name );
+		}
+		else 
+		{
+			COM_PRINTF( channel, "cmderror", va( "admin:playerlist: Received bad team %s", team_name ), self );
+			return;
+		}
 	}
 	else 
 	{
@@ -214,12 +222,12 @@ CMD_PLAYERLIST_f( arg_list )
 					user_defined_page = int( result[ 1 ] );
 					if ( !isDefined( user_defined_page ) )
 					{
-						COM_PRINTF( channel, "cmderror", va( "Page number arg sent to utility:cmdlist is undefined. Valid inputs are 1 thru %s.", remaining_pages ), self );
+						COM_PRINTF( channel, "cmderror", va( "Page number arg sent to admin:playerlist is undefined. Valid inputs are 1 thru %s.", remaining_pages ), self );
 						return;
 					}
 					if ( user_defined_page > remaining_pages || user_defined_page == 0 )
 					{
-						COM_PRINTF( channel, "cmderror", va( "Page number %s sent to utility:cmdlist is invalid. Valid inputs are 1 thru %s.", result[ 1 ], remaining_pages ), self );
+						COM_PRINTF( channel, "cmderror", va( "Page number %s sent to admin:playerlist is invalid. Valid inputs are 1 thru %s.", result[ 1 ], remaining_pages ), self );
 						return;
 					}
 				}
