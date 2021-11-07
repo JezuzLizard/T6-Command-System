@@ -45,42 +45,34 @@ count_votes()
 		}
 		wait 0.05;
 	}
-	if ( level.vote_in_progress_votes.size >= get_vote_threshold() )
+	yes_votes = 0;
+	no_votes = 0;
+	for ( i = 0; i < level.vote_in_progress_votes.size; i++ )
 	{
-		yes_votes = 0;
-		no_votes = 0;
-		for ( i = 0; i < level.vote_in_progress_votes.size; i++ )
+		if ( level.vote_in_progress_votes[ i ] == "yes" )
 		{
-			if ( level.vote_in_progress_votes[ i ] == "yes" )
-			{
-				yes_votes++;
-			}
-			else if ( level.vote_in_progress_votes[ i ] == "no" )
-			{
-				no_votes++;
-			}
+			yes_votes++;
 		}
-		if ( yes_votes > no_votes )
+		else if ( level.vote_in_progress_votes[ i ] == "no" )
 		{
-			outcome = true;
-			COM_PRINTF( "con say", "notitle", va( "vote:count: Received %s yeses, and % nos. Action executed.", yes_votes, no_votes ), self );
+			no_votes++;
 		}
-		else if ( yes_votes < no_votes )
-		{
-			outcome = false;
-			COM_PRINTF( "con say", "notitle", va( "vote:count: Received %s yeses, and % nos. Action not executed.", yes_votes, no_votes ), self );
-		}
-		else 
-		{
-			outcome = cointoss();
-			outcome_str = cast_bool_to_str( outcome, "yes no" )
-			COM_PRINTF( "con say", "notitle", va( "vote:count: Tie. Action decided by cointoss() result %s.", outcome_str ), self );
-		}
+	}
+	if ( yes_votes > no_votes )
+	{
+		outcome = true;
+		level COM_PRINTF( "con|say|", "notitle", va( "vote:count: Received %s yeses, and % nos. Action executed.", yes_votes, no_votes ), self );
+	}
+	else if ( yes_votes < no_votes )
+	{
+		outcome = false;
+		level COM_PRINTF( "con|say|", "notitle", va( "vote:count: Received %s yeses, and % nos. Action not executed.", yes_votes, no_votes ), self );
 	}
 	else 
 	{
-		outcome = false;
-		COM_PRINTF( "con say", "notitle", "vote:count: Not enough votes to meet threshold for player count.", self );
+		outcome = cointoss();
+		outcome_str = cast_bool_to_str( outcome, "yes no" );
+		level COM_PRINTF( "con|say|", "notitle", va( "vote:count: Tie. Action decided by cointoss() result %s.", outcome_str ), self );
 	}
 	level notify( "vote_ended", outcome );
 }

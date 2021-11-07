@@ -61,16 +61,53 @@ COM_IS_CHANNEL_ACTIVE( channel )
 	return isDefined( level.com_channels[ channel ] );
 }
 
-COM_CAPS_MSG_TITLE( filter, players )
+COM_CAPS_MSG_TITLE( channel, filter, players )
 {
-	if ( !isArray( players ) )
+	if ( channel == "g_log" || channel == "con" )
 	{
-		if ( is_true( players.is_server ) )
+		if ( channel == "g_log" )
+		{
+			return va( "%s:", toUpper( filter ) );
+		}
+		else 
 		{
 			return "";
 		}
 	}
-	return terop( filter != "notitle", va( "%s:", toUpper( filter ) ), "" );
+	else
+	{
+		if ( !isArray( players ) )
+		{
+			if ( is_true( players.is_server ) )
+			{
+				return "";
+			}
+		}
+		if ( isSubStr( filter, "error" ) )
+		{
+			color_code = "^1";
+		}
+		else if ( isSubStr( filter, "warning" ) )
+		{
+			color_code = "^3";
+		}
+		else if ( isSubStr( filter, "info" ) )
+		{
+			color_code = "^4";
+		}
+		else 
+		{
+			color_code = "";
+		}
+		if ( filter != "notitle" )
+		{
+			return va( "%s%s:", color_code, toUpper( filter ) );
+		}
+		else 
+		{
+			return "";
+		}
+	}
 }
 
 COM_PRINT( channel, message, players, arg_list )
@@ -80,7 +117,7 @@ COM_PRINT( channel, message, players, arg_list )
 
 COM_LOGPRINT( channel, message, players, arg_list )
 {
-	logPrint( message + "/n" );
+	logPrint( message + "\n" );
 }
 
 COM_CONSOLELOGPRINT( channel, message, players, arg_list )
@@ -106,7 +143,7 @@ COM_IPRINTLN( channel, message, players, arg_list )
 	}
 	else 
 	{
-		COM_PRINTF( "con con_log", "comerror", va( "COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
+		COM_PRINT( "con|", va( "level COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
 	}
 }
 
@@ -128,7 +165,7 @@ COM_IPRINTLNBOLD( channel, message, players, arg_list )
 	}
 	else 
 	{
-		COM_PRINTF( "con con_log", "comerror", va( "COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
+		COM_PRINT( "con|", va( "level COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
 	}
 }
 
@@ -155,7 +192,7 @@ COM_TELL( channel, message, players, arg_list )
 	}
 	else 
 	{
-		COM_PRINTF( "con con_log", "comerror", va( "COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
+		COM_PRINT( "con|", va( "level COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
 	}
 }
 
@@ -165,7 +202,7 @@ COM_OBITUARY( channel, message, players, arg_list )
 	{
 		if ( !isDefined( arg_list[ 0 ] ) || !isDefined( arg_list[ 1 ] ) )
 		{
-			COM_PRINTF( "con con_log", "comerror", va( "COM_PRINTF() channel %s arg_list requires <weapon> <mod>", channel ) );
+			COM_PRINT( "con|", va( "level COM_PRINTF() channel %s arg_list requires <weapon> <mod>", channel ) );
 		}
 		victim = players[ 0 ];
 		attacker = players[ 1 ];
@@ -175,31 +212,51 @@ COM_OBITUARY( channel, message, players, arg_list )
 	}
 	else 
 	{
-		COM_PRINTF( "con con_log", "comerror", va( "COM_PRINTF() channel %s requires an array of two players", channel ) );
+		COM_PRINT( "con|", va( "level COM_PRINTF() channel %s requires an array of two players", channel ) );
 	}
 }
 
 COM_PRINTF( channels, filter, message, players, arg_list )
 {
-	channel_keys = strTok( channels, " " );
+	if ( !isDefined( channels ) )
+	{
+		return;
+	}
+	if ( !isDefined( filter ) )
+	{
+		return;
+	}
+	if ( !isDefined( message ) )
+	{
+		return;
+	}
+	channel_keys = strTok( channels, "|" );
 	foreach ( channel in channel_keys )
 	{
 		if ( COM_IS_CHANNEL_ACTIVE( channel ) && COM_IS_FILTER_ACTIVE( filter ) )
 		{
-			message = va( "%s%s", COM_CAPS_MSG_TITLE( filter, players ), message );
-			[[ level.com_channels[ channel ] ]]( channel, message, players, arg_list );
-		}
-		else 
-		{
-			if ( COM_IS_FILTER_ACTIVE( filter ) )
+			if ( channel == "g_log" )
 			{
-				COM_PRINTF( "con con_log", "comerror", va( "COM_PRINTF() failed to send message %s to channel %s using filter %s", message, channel, filter ) );
+				message_color_code = "";
 			}
+			else 
+			{
+				message_color_code = "^8";
+			}
+			message = va( "%s%s%s", COM_CAPS_MSG_TITLE( channel, filter, players ), message_color_code, message );
+			[[ level.com_channels[ channel ] ]]( channel, message, players, arg_list );
 		}
 	}
 }
 
 COM_GET_CMD_FEEDBACK_CHANNEL()
 {
-	return terop( is_true( self.is_server ), "con", "tell" );
+	if ( is_true( self.is_server ) )
+	{
+		return "con|";
+	}
+	else 
+	{
+		return "tell|";
+	}
 }

@@ -83,26 +83,6 @@ find_map_data_from_alias( alias )
 				location = "transit";
 				mapname = "zm_transit";
 				break;
-			case "gd":
-			case "gdin":
-			case "gdiner":
-				gamemode = "grief";
-				location = "diner";
-				mapname = "zm_transit";
-				break;
-			case "gtu":
-			case "gtunnel":
-				gamemode = "grief";
-				location = "tunnel";
-				mapname = "zm_transit";
-				break;
-			case "gp":
-			case "gpow":
-			case "gpower":
-				gamemode = "grief";
-				location = "power";
-				mapname = "zm_transit";
-				break;
 			case "sf":
 			case "sfarm":
 				gamemode = "standard";
@@ -122,31 +102,77 @@ find_map_data_from_alias( alias )
 				location = "transit";
 				mapname = "zm_transit";
 				break;
-			case "sd":
-			case "sdin":
-			case "sdiner":
-				gamemode = "standard";
-				location = "diner";
-				mapname = "zm_transit";
-				break;
-			case "stu":
-			case "stunnel":
-				gamemode = "standard";
-				location = "tunnel";
-				mapname = "zm_transit";
-				break;
-			case "sp":
-			case "spow":
-			case "spower":
-				gamemode = "standard";
-				location = "power";
-				mapname = "zm_transit";
-				break;
 			default:
-				result[ "gamemode" ] = "";
-				result[ "location" ] = "";
-				result[ "mapname" ] = "";
+				if ( level.mod_integrations[ "cut_tranzit_locations" ] )
+				{
+					switch ( alias )
+					{
+						case "gd":
+						case "gdin":
+						case "gdiner":
+							gamemode = "grief";
+							location = "diner";
+							mapname = "zm_transit";
+							break;
+						case "gtu":
+						case "gtunnel":
+							gamemode = "grief";
+							location = "tunnel";
+							mapname = "zm_transit";
+							break;
+						case "gp":
+						case "gpow":
+						case "gpower":
+							gamemode = "grief";
+							location = "power";
+							mapname = "zm_transit";
+							break;
+						case "gcorn":
+						case "gcornfield":
+							gamemode = "grief";
+							location = "power";
+							mapname = "zm_transit";
+							break;
+						case "sd":
+						case "sdin":
+						case "sdiner":
+							gamemode = "standard";
+							location = "diner";
+							mapname = "zm_transit";
+							break;
+						case "stu":
+						case "stunnel":
+							gamemode = "standard";
+							location = "tunnel";
+							mapname = "zm_transit";
+							break;
+						case "sp":
+						case "spow":
+						case "spower":
+							gamemode = "standard";
+							location = "power";
+							mapname = "zm_transit";
+							break;
+						case "scorn":
+						case "scornfield":
+							gamemode = "standard";
+							location = "power";
+							mapname = "zm_transit";
+							break;
+						default:
+							result[ "gamemode" ] = "";
+							result[ "location" ] = "";
+							result[ "mapname" ] = "";
+					}
+				}
+				else 
+				{
+					result[ "gamemode" ] = "";
+					result[ "location" ] = "";
+					result[ "mapname" ] = "";
+				}
 				return result;
+
 		}
 		result[ "gamemode" ] = gamemode;
 		result[ "location" ] = location;
@@ -157,8 +183,6 @@ find_map_data_from_alias( alias )
 	{
 		switch ( alias )
 		{
-			case "a":
-			case "after":
 			case "aftermath":
 				mapname = "mp_la";
 				break;
@@ -287,11 +311,11 @@ get_ZM_map_display_name_from_location_gametype( location, gametype )
 			return "Farm";
 		case "diner":
 			return "Diner";
-		case "Power":
+		case "power":
 			return "Power";
 		case "cornfield":
 			return "Cornfield";
-		case "Tunnel":
+		case "tunnel":
 			return "Tunnel";
 		case "cellblock":
 			return "Cellblock";
@@ -400,13 +424,13 @@ server_safe_notify_thread( notify_name, index )
 
 find_player_in_server( clientnum_guid_or_name )
 {
-	max_players_str = getDvarInt( "sv_maxclients" ) + "";
-	if ( is_str_int( clientnum_guid_or_name ) && int( clientnum_guid_or_name ) < getDvarInt( "sv_maxclients" ) )
+	is_int = is_str_int( clientnum_guid_or_name );
+	if ( is_int && ( int( clientnum_guid_or_name ) < getDvarInt( "sv_maxclients" ) ) )
 	{
 		client_num = int( clientnum_guid_or_name );
 		enum = 0;
 	}
-	else if ( is_str_int( clientnum_guid_or_name ) )
+	else if ( is_int )
 	{
 		GUID = int( clientnum_guid_or_name );
 		enum = 1;
@@ -446,7 +470,7 @@ find_player_in_server( clientnum_guid_or_name )
 		case 2:
 			foreach ( player in level.players )
 			{
-				if ( clean_player_name_of_clantag( player.name ) == clean_player_name_of_clantag( name ) || isSubStr( player.name, name ) )
+				if ( clean_player_name_of_clantag( toLower( player.name ) ) == clean_player_name_of_clantag( name ) || isSubStr( toLower( player.name ), name ) )
 				{
 					player_data[ "name" ] = player.name;
 					player_data[ "guid" ] = player getGUID();
@@ -478,7 +502,14 @@ get_alias_index( alias, array_of_aliases )
 getDvarStringDefault( dvarname, default_value )
 {
 	cur_dvar_value = getDvar( dvarname );
-	return terop( cur_dvar_value != "", cur_dvar_value, default_value );
+	if ( cur_dvar_value != "" )
+	{
+		return cur_dvar_value;
+	}
+	else 
+	{
+		return default_value;
+	}
 }
 
 is_command_token( char )
@@ -491,18 +522,6 @@ is_command_token( char )
 		}
 	}
 	return false;
-}
-
-terop( arg, val1, val2 )
-{
-	if ( arg )
-	{
-		return val1;
-	}
-	else 
-	{
-		return val2;
-	}
 }
 
 remove_tokens_from_array( array, token )
@@ -523,29 +542,40 @@ remove_tokens_from_array( array, token )
 
 is_str_int( str )
 {
-	number_chars = "0123456789";
-	int_checks_passed = 0;
+	val = 1;
+	list_num = [];
+	list_num[ "0" ] = val;
+	val++;
+	list_num[ "1" ] = val;
+	val++;
+	list_num[ "2" ] = val;
+	val++;
+	list_num[ "3" ] = val;
+	val++;
+	list_num[ "4" ] = val;
+	val++;
+	list_num[ "5" ] = val;
+	val++;
+	list_num[ "6" ] = val;
+	val++;
+	list_num[ "7" ] = val;
+	val++;
+	list_num[ "8" ] = val;
+	val++;
+	list_num[ "9" ] = val;
 	for ( i = 0; i < str.size; i++ )
 	{
-		if ( int_checks_passed != i )
+		if ( !isDefined( list_num[ str[ i ] ] ) )
 		{
-			break;
-		}
-		for ( j = 0; j < number_chars; j++ )
-		{
-			if ( str[ i ] == number_chars[ j ] )
-			{
-				int_checks_passed++;
-				break;
-			}
+			return false;
 		}
 	}
-	return int_checks_passed == str.size;
+	return true;
 }
 
 is_str_bool( str )
 {
-	if ( str == "false" || str == "true" )
+	if ( str == "false" || str == "true" || str == "0" || str == "1" )
 	{
 		return true;
 	}
@@ -554,28 +584,40 @@ is_str_bool( str )
 
 is_str_float( str )
 {
-	number_chars = "0123456789";
+	val = 1;
+	list_num = [];
+	list_num[ "0" ] = val;
+	val++;
+	list_num[ "1" ] = val;
+	val++;
+	list_num[ "2" ] = val;
+	val++;
+	list_num[ "3" ] = val;
+	val++;
+	list_num[ "4" ] = val;
+	val++;
+	list_num[ "5" ] = val;
+	val++;
+	list_num[ "6" ] = val;
+	val++;
+	list_num[ "7" ] = val;
+	val++;
+	list_num[ "8" ] = val;
+	val++;
+	list_num[ "9" ] = val;
+	val++;
+	list_period = [];
+	list_period[ "." ] = val;
 	decimals_found = 0;
-	float_checks_passed = 0;
 	for ( i = 0; i < str.size; i++ )
 	{
-		if ( float_checks_passed != i )
+		if ( isDefined( list_period[ str[ i ] ] ) )
 		{
-			break;
+			decimals_found++;
 		}
-		for ( j = 0; j < number_chars; j++ )
+		else if ( !isDefined( list_num[ str[ i ] ] ) )
 		{
-			if ( str[ i ] == number_chars[ j ] )
-			{
-				float_checks_passed++;
-				break;
-			}
-			else if ( str[ i ] == "." )
-			{
-				decimals_found++;
-				float_checks_passed++;
-				break;
-			}
+			return false;
 		}
 	}
 	if ( str.size <= 10 && decimals_found == 0 )
@@ -586,7 +628,7 @@ is_str_float( str )
 	{
 		return false;
 	}
-	return float_checks_passed == str.size;
+	return true;
 }
 
 is_str_vec( str )
@@ -632,14 +674,15 @@ cast_str_to_bool( str )
 
 get_type( var )
 {
-	is_int = isInt( var );
-	is_float = isFloat( var );
-	is_vec = isVec( var );
+	is_int = is_str_int( var );
+	is_float = is_str_float( var );
+	is_vec = is_str_vec( var );
+	is_bool = is_str_bool( var );
 	if ( is_vec )
 	{
 		return "vec";
 	}
-	if ( ( var == 0 || var == 1 ) && is_int )
+	if ( is_bool )
 	{
 		return "bool";
 	}
@@ -647,14 +690,15 @@ get_type( var )
 	{
 		return "int";
 	}
-	if ( isString( var ) )
-	{
-		return "str";
-	}
 	if ( is_float )
 	{
 		return "float";
 	}
+	if ( isString( var ) )
+	{
+		return "str";
+	}
+	return "unknown";
 }
 
 concatenate_array( array, delimiter )
@@ -682,7 +726,14 @@ cast_bool_to_str( bool, binary_string_options )
 	options = strTok( binary_string_options, " " );
 	if ( options.size == 2 )
 	{
-		return terop( bool, options[ 0 ], options[ 1 ] );
+		if ( bool )
+		{
+			return options[ 0 ];
+		}
+		else 
+		{
+			return options[ 1 ];
+		}
 	}
 	return bool + "";
 }
@@ -697,35 +748,28 @@ is_odd( int )
 	return int % 2 == 1;
 }
 
-CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmd_usage, cmdfunc, is_threaded_cmd )
+CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmdusage, cmdfunc, is_threaded_cmd )
 {
 	if ( !isDefined( level.custom_commands[ namespace_aliases ] ) )
 	{
 		level.custom_commands[ namespace_aliases ] = [];
 		level.custom_commands_namespaces_total++;
 	}
-	if ( !isDefined( level.custom_commands[ namespace_aliases ][ cmdaliases ] ) )
+	level.custom_commands[ namespace_aliases ][ cmdaliases ] = spawnStruct();
+	level.custom_commands[ namespace_aliases ][ cmdaliases ].usage = cmdusage;
+	level.custom_commands[ namespace_aliases ][ cmdaliases ].func = cmdfunc;
+	level.custom_commands_total++;
+	if ( ceil( level.custom_commands_total / level.custom_commands_page_max ) > level.custom_commands_page_count )
 	{
-		level.custom_commands[ namespace_aliases ][ cmdaliases ] = spawnStruct();
-		level.custom_commands[ namespace_aliases ][ cmdaliases ].usage = cmd_usage;
-		level.custom_commands[ namespace_aliases ][ cmdaliases ].func = cmdfunc;
-		level.custom_commands_total++;
-		if ( ceil( level.custom_commands_total / level.custom_commands_page_max ) > level.custom_commands_page_count )
-		{
-			level.custom_commands_page_count++;
-		}
-		if ( is_true( is_threaded_cmd ) )
-		{
-			level.custom_threaded_commands[ cmdaliases ] = true;
-		}
+		level.custom_commands_page_count++;
 	}
-	else 
+	if ( is_true( is_threaded_cmd ) )
 	{
-		COM_PRINTF( "con con_log", "screrror", va( "Command %s is already defined in namespace %s", cmdaliases, namespace_aliases ) );
+		level.custom_threaded_commands[ cmdaliases ] = true;
 	}
 }
 
-VOTE_ADDVOTEABLE( vote_type_aliases, pre_vote_execute_func, post_vote_execute_func )
+VOTE_ADDVOTEABLE( vote_type_aliases, usage, pre_vote_execute_func, post_vote_execute_func )
 {
 	if ( !isDefined( level.custom_votes ) )
 	{
@@ -736,11 +780,13 @@ VOTE_ADDVOTEABLE( vote_type_aliases, pre_vote_execute_func, post_vote_execute_fu
 		level.custom_votes[ vote_type_aliases ] = spawnStruct();
 		level.custom_votes[ vote_type_aliases ].pre_func = pre_vote_execute_func;
 		level.custom_votes[ vote_type_aliases ].post_func = post_vote_execute_func;
+		level.custom_votes[ vote_type_aliases ].usage = usage;
 	}
 }
 
 CMD_EXECUTE( namespace, cmdname, arg_list )
 {
+	channel = "";
 	indexable_cmdname = "";
 	is_threaded_cmd = false;
 	if ( namespace != "" )
@@ -768,33 +814,40 @@ CMD_EXECUTE( namespace, cmdname, arg_list )
 			result = self [[ level.custom_commands[ namespace ][ indexable_cmdname ].func ]]( arg_list );
 		}
 	}
-	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
-	if ( isDefined( result ) && result[ "filter" ] != "cmderror" )
+	channel = "tell|";
+	if ( is_true( self.is_server ) )
 	{
-		cmd_log = self.name + " executed " + result[ "message" ];
-		COM_PRINTF( "g_log", result[ "filter" ], cmd_log, self );
-		if ( isDefined( result[ "channels" ] ) )
-		{
-			COM_PRINTF( result[ "channels" ], result[ "filter" ], message, self );
-		}
-		else 
-		{
-			COM_PRINTF( channel, result[ "filter" ], message, self );
-		}
+		channel = "con|";
 	}
-	else if ( !is_threaded_cmd )
+	if ( array_validate( result ) )
 	{
-		if ( namespace == "" )
+		if ( result[ "filter" ] != "cmderror" )
 		{
-			COM_PRINTF( channel, "cmderror", "Command bad namespace", self );
+			cmd_log = va( "%s executed %s", self.name, result[ "message" ] );
+			level COM_PRINTF( "g_log|", result[ "filter" ], cmd_log, self );
+			if ( isDefined( result[ "channels" ] ) )
+			{
+				level COM_PRINTF( result[ "channels" ], result[ "filter" ], result[ "message" ], self );
+			}
+			else 
+			{
+				level COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
+			}
 		}
-		else if ( indexable_cmdname == "" )
+		else if ( !is_threaded_cmd )
 		{
-			COM_PRINTF( channel, "cmderror", va( "Command %s not found in namespace %s", cmdname, namespace ), self );
-		}
-		else 
-		{
-			COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
+			if ( namespace == "" )
+			{
+				level COM_PRINTF( channel, "cmderror", "Command unknown namespace", self );
+			}
+			else if ( indexable_cmdname == "" )
+			{
+				level COM_PRINTF( channel, "cmderror", va( "Command %s not found in namespace %s", cmdname, namespace ), self );
+			}
+			else 
+			{
+				level COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
+			}
 		}
 	}
 }

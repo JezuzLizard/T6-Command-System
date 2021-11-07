@@ -13,9 +13,9 @@ VOTE_INIT()
 	level.vote_start_anonymous = getDvarIntDefault( "tcs_anonymous_vote_start", 1 );
 	CMD_ADDCOMMANDLISTENER( "listener_vote", "yes" );
 	CMD_ADDCOMMANDLISTENER( "listener_vote", "no" );
-	VOTE_ADDVOTEABLE( "cvarall ca", ::VOTEABLE_CVARALL_PRE_f, ::VOTEABLE_CVARALL_POST_f );
-	VOTE_ADDVOTEABLE( "kick k", ::VOTEABLE_KICK_PRE_f, ::VOTEABLE_KICK_POST_f );
-	VOTE_ADDVOTEABLE( "nextmap nm", ::VOTEABLE_NEXTMAP_PRE_f, ::VOTEABLE_NEXTMAP_POST_f );
+	VOTE_ADDVOTEABLE( "cvarall ca", "vote:start cvarall <dvarname> <newval>", ::VOTEABLE_CVARALL_PRE_f, ::VOTEABLE_CVARALL_POST_f );
+	VOTE_ADDVOTEABLE( "kick k", "vote:start kick <name|guid|clientnum>", ::VOTEABLE_KICK_PRE_f, ::VOTEABLE_KICK_POST_f );
+	VOTE_ADDVOTEABLE( "nextmap nm", "vote:start <alias>", ::VOTEABLE_NEXTMAP_PRE_f, ::VOTEABLE_NEXTMAP_POST_f );
 }
 
 VOTEABLE_CVARALL_PRE_f( arg_list )
@@ -27,7 +27,7 @@ VOTEABLE_CVARALL_PRE_f( arg_list )
 	if ( isDefined( new_value ) && getDvar( dvar_name ) != "" )
 	{
 		result[ "message" ] = va( "%s would like to set %s to %s", name, dvar_name, new_value );
-		result[ "channels" ] = "con say g_log";
+		result[ "channels" ] = "con|say|g_log|";
 		result[ "filter" ] = "notitle";
 	}
 	else 
@@ -47,7 +47,7 @@ VOTEABLE_KICK_PRE_f( arg_list )
 	if ( isDefined( player_data ) )
 	{
 		result[ "message" ] = va( "%s would like to kick %s", name, player_data[ "name" ] );
-		result[ "channels" ] = "con say g_log";
+		result[ "channels" ] = "con|say|g_log|";
 		result[ "filter" ] = "notitle";
 	}
 	else 
@@ -75,7 +75,7 @@ VOTEABLE_NEXTMAP_PRE_f( arg_list )
 			display_name = get_MP_map_name( rotation_data[ "mapname" ] );
 		}
 		result[ "message" ] = va( "%s would like to set the next map to %s", name, display_name );
-		result[ "channels" ] = "con say g_log";
+		result[ "channels" ] = "con|say|g_log|";
 		result[ "filter" ] = "cmdinfo";
 	}
 	else 

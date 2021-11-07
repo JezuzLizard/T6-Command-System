@@ -9,7 +9,21 @@
 
 CMD_RANDOMNEXTMAP_f( arg_list )
 {
-	string = getDvarStringDefault( "tcs_random_map_list", "prison rooftop tomb processing nuked gcellblock gstreet gfarm gtown gdepot gdiner gtunnel gpower sfarm stown sdepot sdiner stunnel spower" );
+	if ( sessionModeIsZombiesGame() )
+	{
+		if ( level.mod_integrations[ "cut_tranzit_locations" ] )
+		{
+			string = getDvarStringDefault( "tcs_random_map_list", "prison rooftop tomb processing nuked gcellblock gstreet gfarm gtown gdepot gdiner gtunnel gpower sfarm stown sdepot sdiner stunnel spower" );
+		}
+		else 
+		{
+			string = getDvarStringDefault( "tcs_random_map_list", "prison rooftop tomb processing nuked gcellblock gstreet gfarm gtown gdepot sfarm stown sdepot" );
+		}
+	}
+	else 
+	{
+		string = getDvarStringDefault( "tcs_random_map_list", "aftermath cargo carrier drone express hijacked meltdown overflow plaza raid slums village turbine yemen nuketown downhill mirage hydro grind encore magma vertigo studio uplink detour cove rush dig frost pod takeoff" );
+	}
 	alias_keys = strTok( string, " " );
 	random_alias = random( alias_keys );
 	rotation_data = find_map_data_from_alias( random_alias );
@@ -86,7 +100,7 @@ CMD_LOCK_SERVER_f( arg_list )
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:lock: Failed to lock server due to missing param";
+		result[ "message" ] = "admin:lock: Failed to lock server due to missing <password> param";
 	}
 	return result;
 }
@@ -182,21 +196,21 @@ CMD_CVAR_f( arg_list )
 					dvar_value = arg_list[ 2 ];
 					player setClientDvar( dvar_name, dvar_value );
 					result[ "filter" ] = "cmdinfo";
-					result[ "message" ] = va( "client:cvar: Successfully set %s %s to %s", player_data[ "name" ], dvar_name, dvar_value );
-					break;
+					result[ "message" ] = va( "admin:cvar: Successfully set %s %s to %s", player_data[ "name" ], dvar_name, dvar_value );
+					return result;
 				}
 			}
 		}
 		else 
 		{
 			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "client:cvar: Could not find player";
+			result[ "message" ] = "admin:cvar: Could not find player";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "client:cvar: Failed to set cvar due to missing params";
+		result[ "message" ] = "admin:cvar: Failed to set cvar due to missing params";
 	}
 	return result;
 }

@@ -22,18 +22,17 @@ main()
 	level.server = spawnStruct();
 	level.server.name = "Server";
 	level.server.is_server = true;
-	level.server.channel = "con";
 	level.custom_commands_restart_countdown = 5;
 	level.custom_commands_namespaces_total = 0;
 	level.custom_commands_total = 0;
 	level.custom_commands_page_count = 0;
-	level.custom_commands_page_max = 6;
+	level.custom_commands_page_max = 5;
 	level.custom_commands_listener_timeout = getDvarIntDefault( "tcs_cmd_listener_timeout", 12 );
 	level.custom_commands_cooldown_time = getDvarIntDefault( "tcs_cmd_cd", 5 );
 	level.custom_commands_tokens = getDvarStringDefault( "tcs_cmd_tokens", "/" ); //separated by spaces, good tokens are generally not used at the start of a normal message 
 	// "/" is recommended for anonymous command usage, other tokens are not anonymous
 	CMD_INIT_PERMS();
-
+	INIT_MOD_INTEGRATIONS();
 	level.custom_commands = [];
 	CMD_ADDCOMMAND( "admin a", "cvar cv", "admin:cvar <name|guid|clientnum> <cvarname> <newval>", ::CMD_CVAR_f );
 	CMD_ADDCOMMAND( "admin a", "kick k", "admin:kick <name|guid|clientnum>", ::CMD_ADMIN_KICK_f );
@@ -83,14 +82,14 @@ COMMAND_BUFFER()
 	level endon( "end_commands" );
 	while ( true )
 	{
-		level waittill( "say", message, player, ishidden );
+		level waittill( "say", message, player, isHidden );
 		if ( isDefined( player ) && !isSubStr( message, ":" ) && !array_validate( player.cmd_listeners ) )
 		{
 			continue;
 		}
 		/*
 		//uncomment when say notify improvement is pushed to prod
-		if ( isDefined( player ) && !ishidden && !is_command_token( message[ 0 ] ) )
+		if ( isDefined( player ) && !is_command_token( message[ 0 ] ) || isDefined( player ) && !ishidden )
 		{
 			continue;
 		}
@@ -126,7 +125,7 @@ COMMAND_BUFFER()
 		channel = player COM_GET_CMD_FEEDBACK_CHANNEL();
 		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
 		{
-			COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown ), player );
+			level COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown ), player );
 			continue;
 		}
 		multi_cmds = parse_cmd_message( message );
@@ -139,6 +138,7 @@ COMMAND_BUFFER()
 			temp_array_index = multi_cmds[ 0 ];
 			multi_cmds = [];
 			multi_cmds[ 0 ] = temp_array_index;
+			level COM_PRINTF( channel, "cmdwarning", "You do not have permission to use multi cmds; only executing the first cmd" );
 		}
 		for ( cmd_index = 0; cmd_index < multi_cmds.size; cmd_index++ )
 		{
@@ -147,7 +147,7 @@ COMMAND_BUFFER()
 			args = multi_cmds[ cmd_index ][ "args" ];
 			if ( !player has_permission_for_cmd( namespace, cmdname ) )
 			{
-				COM_PRINTF( "tell", "cmderror", va( "You do not have permission to use %s command.", cmdname ), player );
+				level COM_PRINTF( channel, "cmderror", va( "You do not have permission to use %s command.", cmdname ), player );
 			}
 			else 
 			{
@@ -163,4 +163,13 @@ end_commands_on_end_game()
 	level waittill( "end_game" );
 	wait 15;
 	level notify( "end_commands" );
+}
+
+INIT_MOD_INTEGRATIONS()
+{
+	if ( !isDefined( level.mod_integrations ) )
+	{
+		level.mod_integrations = [];
+	}
+	level.mod_integrations[ "cut_tranzit_locations" ] = getDvarIntDefault( "tcs_integrations_cut_tranzit_locations", 0 );
 }
