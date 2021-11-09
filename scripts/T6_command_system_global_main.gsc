@@ -8,6 +8,7 @@
 #include scripts/cmd_system_modules/global_commands;
 #include scripts/cmd_system_modules/global_threaded_commands;
 #include scripts/cmd_system_modules/global_voteables;
+#include scripts/cmd_system_modules/_filesystem;
 
 #include common_scripts/utility;
 #include maps/mp/_utility;
@@ -19,6 +20,7 @@ main()
 		setDvar( "sv_maprotation_old", getDvar( "sv_maprotation" ) );
 	}
 	COM_INIT();
+	FS_INIT();
 	level.server = spawnStruct();
 	level.server.name = "Server";
 	level.server.is_server = true;
@@ -60,6 +62,7 @@ main()
 	level thread COMMAND_BUFFER();
 	level thread dvar_command_watcher();
 	level thread end_commands_on_end_game();
+	level notify( "tcs_init_done" );
 }
 
 dvar_command_watcher()
@@ -98,6 +101,11 @@ COMMAND_BUFFER()
 		{
 			player = level.server;
 		}
+		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
+		{
+			level COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown ), player );
+			continue;
+		}
 		message = toLower( message );
 		if ( array_validate( player.cmd_listeners ) )
 		{
@@ -123,11 +131,6 @@ COMMAND_BUFFER()
 			}
 		}
 		channel = player COM_GET_CMD_FEEDBACK_CHANNEL();
-		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
-		{
-			level COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown ), player );
-			continue;
-		}
 		multi_cmds = parse_cmd_message( message );
 		if ( !array_validate( multi_cmds ) )
 		{

@@ -3,6 +3,7 @@
 #include scripts/cmd_system_modules/_listener;
 #include scripts/cmd_system_modules/_perms;
 #include scripts/cmd_system_modules/_text_parser;
+#include scripts/cmd_system_modules/_filesystem;
 
 #include common_scripts/utility;
 #include maps/mp/_utility;
@@ -138,17 +139,17 @@ CMD_ADMIN_KICK_f( arg_list )
 	kicked = false;
 	if ( array_validate( arg_list ) )
 	{
-		player_data = find_player_in_server( arg_list[ 0 ] );
-		if ( isDefined( player_data ) )
+		player = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( player ) )
 		{
-			kick( player_data[ "clientnum" ] );
+			kick( player getEntityNumber() );
 			kicked = true;
 		}
 	}
 	if ( kicked )
 	{
 		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "admin:kick: Successfully kicked %s", player_data[ "name" ] );
+		result[ "message" ] = va( "admin:kick: Successfully kicked %s", player.name );
 	}
 	else 
 	{
@@ -185,21 +186,15 @@ CMD_CVAR_f( arg_list )
 	result = [];
 	if ( array_validate( arg_list ) && arg_list.size == 3 )
 	{
-		player_data = find_player_in_server( arg_list[ 0 ] );
-		if ( isDefined( player_data ) )
+		player = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( player ) )
 		{
-			foreach ( player in level.players )
-			{
-				if ( player getGUID() == player_data[ "guid" ] )
-				{
-					dvar_name = arg_list[ 1 ];
-					dvar_value = arg_list[ 2 ];
-					player setClientDvar( dvar_name, dvar_value );
-					result[ "filter" ] = "cmdinfo";
-					result[ "message" ] = va( "admin:cvar: Successfully set %s %s to %s", player_data[ "name" ], dvar_name, dvar_value );
-					return result;
-				}
-			}
+			dvar_name = arg_list[ 1 ];
+			dvar_value = arg_list[ 2 ];
+			player setClientDvar( dvar_name, dvar_value );
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "admin:cvar: Successfully set %s %s to %s", player.name, dvar_name, dvar_value );
+			return result;
 		}
 		else 
 		{

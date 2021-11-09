@@ -42,11 +42,11 @@ VOTEABLE_CVARALL_PRE_f( arg_list )
 VOTEABLE_KICK_PRE_f( arg_list )
 {
 	name = arg_list[ 0 ];
-	player_data = find_player_in_server( arg_list[ 1 ] );
+	player = find_player_in_server( arg_list[ 1 ] );
 	result = [];
-	if ( isDefined( player_data ) )
+	if ( isDefined( player ) )
 	{
-		result[ "message" ] = va( "%s would like to kick %s", name, player_data[ "name" ] );
+		result[ "message" ] = va( "%s would like to kick %s", name, player.name );
 		result[ "channels" ] = "con|say|g_log|";
 		result[ "filter" ] = "notitle";
 	}
