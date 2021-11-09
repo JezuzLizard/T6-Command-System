@@ -25,6 +25,7 @@ COM_INIT()
 	COM_ADDCHANNEL( "say", ::COM_SAY );
 	COM_ADDCHANNEL( "tell", ::COM_TELL );
 	COM_ADDCHANNEL( "obituary", ::COM_OBITUARY );
+	COM_ADDCHANNEL( "scr_debug_log.txt", ::COM_DEBUG_LOGPRINT );
 }
 
 COM_ADDFILTER( filter, default_value )
@@ -110,6 +111,11 @@ COM_CAPS_MSG_TITLE( channel, filter, players )
 	}
 }
 
+COM_DEBUG_LOGPRINT( channel, message, players, arg_list )
+{
+	writeFile( va( "%s\\%s", level.FS_basepath, channel ), va( "%s\n", message ), true );
+}
+
 COM_PRINT( channel, message, players, arg_list )
 {
 	print( message );
@@ -171,7 +177,7 @@ COM_IPRINTLNBOLD( channel, message, players, arg_list )
 
 COM_SAY( channel, message, players, arg_list )
 {
-	say( message );
+	//say( message );
 }
 
 COM_TELL( channel, message, players, arg_list )
