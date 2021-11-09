@@ -448,10 +448,7 @@ find_player_in_server( clientnum_guid_or_name )
 			{
 				if ( player getEntityNumber() == client_num )
 				{
-					player_data[ "name" ] = player.name;
-					player_data[ "guid" ] = player getGUID();
-					player_data[ "clientnum" ] = player getEntityNumber();
-					return player_data;
+					return player;
 				}
 			}
 			break;
@@ -460,10 +457,7 @@ find_player_in_server( clientnum_guid_or_name )
 			{
 				if ( player getGUID() == GUID )
 				{
-					player_data[ "name" ] = player.name;
-					player_data[ "guid" ] = player getGUID();
-					player_data[ "clientnum" ] = player getEntityNumber();
-					return player_data;
+					return player;
 				}
 			}
 			break;
@@ -472,10 +466,7 @@ find_player_in_server( clientnum_guid_or_name )
 			{
 				if ( clean_player_name_of_clantag( toLower( player.name ) ) == clean_player_name_of_clantag( name ) || isSubStr( toLower( player.name ), name ) )
 				{
-					player_data[ "name" ] = player.name;
-					player_data[ "guid" ] = player getGUID();
-					player_data[ "clientnum" ] = player getEntityNumber();
-					return player_data;
+					return player;
 				}
 			}
 			break;
