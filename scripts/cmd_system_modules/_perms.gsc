@@ -10,7 +10,7 @@ CMD_INIT_PERMS()
 	level.server_users[ "admins" ].names = [];
 	level.server_users[ "admins" ].guids = [];
 	level.server_users[ "admins" ].cmd_rate_limit = -1;
-	str_keys = strTok( getDvar( "server_admin_guids" ), ";" );
+	str_keys = strTok( getDvar( "server_admin_guids" ), "," );
 	int_keys = [];
 	foreach ( key in str_keys )
 	{
