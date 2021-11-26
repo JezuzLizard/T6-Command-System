@@ -17,8 +17,10 @@ CMD_INIT_PERMS()
 		int_keys[ int_keys.size ] = int( key );
 	}
 	level.server_users[ "admins" ].guids = int_keys;
-	level.grief_no_permissions_required_namespaces = [];
-	level.grief_no_permissions_required_namespaces[ 0 ] = "vote v";
+	level.tcs_no_permissions_required_namespaces = [];
+	level.tcs_no_permissions_required_namespaces = strTok( getDvarStringDefault( "tcs_no_perm_required_namespaces", "vote v" ), "|" );
+	level.tcs_no_permissions_required_commands = [];
+	level.tcs_no_permissions_required_commands = strTok( getDvarStringDefault( "tcs_no_perm_required_commands", "cmdlist cl|start s" ), "|" );
 }
 
 CMD_COOLDOWN()
@@ -85,12 +87,23 @@ has_permission_for_cmd( namespace, cmd )
 			return true;
 		}
 	}
-	foreach ( namespace in level.grief_no_permissions_required_namespaces )
+	foreach ( namespace in level.tcs_no_permissions_required_namespaces )
 	{
 		namespace_keys = strTok( namespace, " " );
 		for ( i = 0; i < namespace_keys.size; i++ )
 		{
 			if ( namespace == namespace_keys[ i ] )
+			{
+				return true;
+			}
+		}
+	}
+	foreach ( command in level.tcs_no_permissions_required_commands )
+	{
+		command_keys = strTok( command, " " );
+		for ( i = 0; i < command_keys.size; i++ )
+		{
+			if ( cmd == command_keys[ i ] )
 			{
 				return true;
 			}

@@ -51,6 +51,7 @@ main()
 	CMD_ADDCOMMAND( "admin a", "rotate r", "admin:rotate", ::CMD_ROTATE_f, true );
 	CMD_ADDCOMMAND( "admin a", "changemap cm", "admin:changemap <mapalias>", ::CMD_CHANGEMAP_f, true );
 	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
+	CMD_ADDCOMMAND( "vote v", "list l", "vote:list", ::CMD_UTILITY_VOTELIST_f, true );
 
 	VOTE_INIT();
 
@@ -86,24 +87,17 @@ COMMAND_BUFFER()
 	while ( true )
 	{
 		level waittill( "say", message, player, isHidden );
-		if ( isDefined( player ) && !isSubStr( message, ":" ) && !array_validate( player.cmd_listeners ) )
+		if ( isDefined( player ) && !isHidden && !is_command_token( message[ 0 ] ) )
 		{
 			continue;
 		}
-		/*
-		//uncomment when say notify improvement is pushed to prod
-		if ( isDefined( player ) && !is_command_token( message[ 0 ] ) || isDefined( player ) && !ishidden )
-		{
-			continue;
-		}
-		*/
 		if ( !isDefined( player ) )
 		{
 			player = level.server;
 		}
 		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
 		{
-			level COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown ), player );
+			level COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown + "" ), player );
 			continue;
 		}
 		message = toLower( message );
@@ -123,7 +117,7 @@ COMMAND_BUFFER()
 			}
 			if ( found_listener )
 			{
-				break;
+				continue;
 			}
 			if ( found_listener )
 			{
@@ -145,8 +139,8 @@ COMMAND_BUFFER()
 		}
 		for ( cmd_index = 0; cmd_index < multi_cmds.size; cmd_index++ )
 		{
-			namespace = toLower( multi_cmds[ cmd_index ][ "namespace" ] );
-			cmdname = toLower( multi_cmds[ cmd_index ][ "cmdname" ] );
+			namespace = multi_cmds[ cmd_index ][ "namespace" ];
+			cmdname = multi_cmds[ cmd_index ][ "cmdname" ];
 			args = multi_cmds[ cmd_index ][ "args" ];
 			if ( !player has_permission_for_cmd( namespace, cmdname ) )
 			{

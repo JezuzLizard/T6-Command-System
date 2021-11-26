@@ -56,7 +56,6 @@ CMD_NEXTMAP_f( arg_list )
 {
 	if ( array_validate( arg_list ) )
 	{
-		alias = toLower( arg_list[ 0 ] );
 		rotation_data = find_map_data_from_alias( alias );
 		if ( rotation_data[ "mapname" ] != "" )
 		{
