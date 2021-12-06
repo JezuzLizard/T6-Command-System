@@ -39,7 +39,7 @@ find_map_data_from_alias( alias )
 			case "buried":
 			case "processing":
 				result[ "gamemode" ] = "classic";
-				location = "processing";
+				result[ "location" ] = "processing";
 				result[ "mapname" ] = "zm_buried";
 				break;
 			case "nuke":
@@ -282,7 +282,7 @@ find_map_data_from_alias( alias )
 				break;
 			default:
 				result[ "mapname" ] = "";
-				return result;
+				break;
 		}
 	}
 	return result;
@@ -293,40 +293,76 @@ get_ZM_map_display_name_from_location_gametype( location, gametype )
 	switch ( location )
 	{
 		case "town":
-			return "Town";
+			location_str = "Town";
+			break;
 		case "farm":
-			return "Farm";
+			location_str = "Farm";
+			break;
 		case "diner":
-			return "Diner";
+			location_str = "Diner";
+			break;
 		case "power":
-			return "Power";
+			location_str = "Power";
+			break;
 		case "cornfield":
-			return "Cornfield";
+			location_str = "Cornfield";
+			break;
 		case "tunnel":
-			return "Tunnel";
+			location_str = "Tunnel";
+			break;
 		case "cellblock":
-			return "Cellblock";
+			location_str = "Cellblock";
+			break;
 		case "street":
+			location_str = "Borough";
+			break;
 		case "processing":
-			return "Buried";
+			location_str = "Buried";
+			break;
 		case "prison":
-			return "Alcatraz";
+			location_str = "Alcatraz";
+			break;
 		case "rooftop":
-			return "Die Rise";
+			location_str = "Die Rise";
+			break;
 		case "tomb":
-			return "Origins";
+			location_str = "Origins";
+			break;
 		default:
 			break;
 	}
-	if ( location == "transit" )
+	switch ( gametype )
 	{
-		if ( gametype == "classic" )
-		{
-			return "Tranzit";
-		}
-		return "Bus Depot";
+		case "classic":
+			gametype_str = "Classic";
+			break;
+		case "standard":
+			gametype_str = "Survival";
+			break;
+		case "grief":
+			gametype_str = "Grief";
+			break;
+		case "cleansed":
+			gametype_str = "Turned";
+			break;
+		default:
+			break;
 	}
-	return location;
+	if ( location_str == "" )
+	{
+		if ( location == "transit" )
+		{
+			if ( gametype == "classic" )
+			{
+				location_str = "Tranzit";
+			}
+			else 
+			{
+				location_str = "Bus Depot";
+			}
+		}
+	}
+	return va( "%s %s", gametype_str, location_str );
 }
 
 get_MP_map_name( mapname )

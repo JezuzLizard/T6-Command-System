@@ -106,18 +106,15 @@ COMMAND_BUFFER()
 			listener_cmds_args = strTok( message, " " );
 			cmdname = listener_cmds_args[ 0 ];
 			listener_keys = getArrayKeys( player.cmd_listeners );
+			found_listener = false;
 			foreach ( listener in listener_keys )
 			{
-				if ( CMD_ISCOMMANDLISTENER( listener, cmdname ) )
+				if ( CMD_ISCOMMANDLISTENER( listener, cmdname ) && player CMD_ISCOMMANDLISTENER_ACTIVE( listener ) )
 				{
 					player CMD_EXECUTELISTENER( listener, listener_cmds_args );
 					found_listener = true;
 					break;
 				}
-			}
-			if ( found_listener )
-			{
-				continue;
 			}
 			if ( found_listener )
 			{
