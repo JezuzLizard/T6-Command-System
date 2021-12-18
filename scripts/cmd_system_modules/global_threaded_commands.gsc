@@ -114,7 +114,6 @@ CMD_CHANGEMAP_f( arg_list )
 			message = va( "admin:changemap: %s second rotate to map %s countdown started.", level.custom_commands_restart_countdown + "", display_name );
 			level COM_PRINTF( "g_log", "cmdinfo", va( "Changemap Usage: %s changed map to %s.", self.name, display_name ), self );
 			level COM_PRINTF( "say|con", "notitle", message, self );
-			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			for ( i = level.custom_commands_restart_countdown; i > 0; i-- )
 			{

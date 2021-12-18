@@ -37,7 +37,6 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 	{
 		rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
 	}
-	setDvar( "sv_maprotation", rotation_string );
 	setDvar( "sv_maprotationCurrent", rotation_string );
 	result[ "filter" ] = "cmdinfo";
 	result[ "message" ] = "admin:randomnextmap: Set new secret random map";
@@ -47,8 +46,7 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 CMD_RESETROTATION_f( arg_list )
 {
 	result = [];
-	setDvar( "sv_maprotation", getDvar( "sv_maprotation_old" ) );
-	setDvar( "sv_maprotationCurrent", getDvar( "sv_maprotation_old" ) );
+	setDvar( "sv_maprotationCurrent", getDvar( "sv_maprotation" ) );
 	result[ "filter" ] = "cmdinfo";
 	result[ "message" ] = "admin:resetrotation: Successfully reset the map rotation";
 	return result;
@@ -73,7 +71,6 @@ CMD_NEXTMAP_f( arg_list )
 				display_name = get_MP_map_name( rotation_data[ "mapname" ] );
 				rotation_string = va( "exec %s.cfg map %s", getDvar( "g_gametype" ), rotation_data[ "mapname" ] );
 			}
-			setDvar( "sv_maprotation", rotation_string );
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			result[ "filter" ] = "cmdinfo";
 			result[ "message" ] = va( "admin:nextmap: Successfully set next map to %s", display_name );

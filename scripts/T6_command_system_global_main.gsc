@@ -15,10 +15,6 @@
 
 main()
 {
-	if ( getDvar( "sv_maprotation_old" ) == "" )
-	{
-		setDvar( "sv_maprotation_old", getDvar( "sv_maprotation" ) );
-	}
 	COM_INIT();
 	FS_INIT();
 	level.server = spawnStruct();
