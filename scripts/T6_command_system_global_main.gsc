@@ -46,6 +46,7 @@ main()
 	CMD_ADDCOMMAND( "admin a", "restart mr", "admin:restart", ::CMD_RESTART_f, true );
 	CMD_ADDCOMMAND( "admin a", "rotate r", "admin:rotate", ::CMD_ROTATE_f, true );
 	CMD_ADDCOMMAND( "admin a", "changemap cm", "admin:changemap <mapalias>", ::CMD_CHANGEMAP_f, true );
+	CMD_ADDCOMMAND( "admin a", "setrotation sr", "admin:setrotation <rotationdvar", ::CMD_SETROTATION_f );
 	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
 	CMD_ADDCOMMAND( "vote v", "list l", "vote:list", ::CMD_UTILITY_VOTELIST_f, true );
 

@@ -211,3 +211,30 @@ CMD_CVAR_f( arg_list )
 	}
 	return result;
 }
+
+CMD_SETROTATION_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		new_rotation = getDvar( arg_list[ 0 ] );
+		if ( new_rotation != "" )
+		{
+			setDvar( "sv_maprotationCurrent", new_rotation );
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "admin:setrotation: Successfully set the rotation to %s's value", new_rotation );
+			return result;
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "admin:setrotation: New rotation dvar is blank";
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "admin:setrotation: Missing dvar name arg";
+	}
+	return result;
+}
