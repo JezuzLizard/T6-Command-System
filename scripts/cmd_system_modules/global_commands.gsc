@@ -196,7 +196,6 @@ CMD_CVAR_f( arg_list )
 			player setClientDvar( dvar_name, dvar_value );
 			result[ "filter" ] = "cmdinfo";
 			result[ "message" ] = va( "admin:cvar: Successfully set %s %s to %s", player.name, dvar_name, dvar_value );
-			return result;
 		}
 		else 
 		{
@@ -210,6 +209,82 @@ CMD_CVAR_f( arg_list )
 		result[ "message" ] = "admin:cvar: Failed to set cvar due to missing params";
 	}
 	return result;
+}
+
+CMD_MUTE_PLAYER_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		player = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( player ) )
+		{
+			if ( !is_true( player.chat_muted ) )
+			{
+				if ( !is_true( player.is_admin ) )
+				{
+					player.chat_muted = true;
+					result[ "filter" ] = "cmdinfo";
+					result[ "message" ] = va( "admin:mute: Successfully muted %s until next map", player.name );
+				}
+				else 
+				{
+					result[ "filter" ] = "cmderror";
+					result[ "message" ] = va( "admin:mute: Failed to mute player %s player is admin", player.name );
+				}
+			}
+			else 
+			{
+				result[ "filter" ] = "cmderror";
+				result[ "message" ] = va( "admin:mute: Failed to mute player %s player already muted", player.name );
+			}
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "admin:mute: Could not find player";
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "admin:mute: Failed to mute due to missing player arg";
+	}
+	return result;
+}
+
+CMD_UNMUTE_PLAYER_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		player = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( player ) )
+		{
+			if ( is_true( player.chat_muted ) )
+			{
+				player.chat_muted = undefined;
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = va( "admin:unmute: Successfully unmuted %s", player.name );
+			}
+			else 
+			{
+				result[ "filter" ] = "cmderror";
+				result[ "message" ] = va( "admin:unmute: Failed to unmute player %s player not muted", player.name );
+			}
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "admin:unmute: Could not find player";
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "admin:unmute: Failed to unmute due to missing player arg";
+	}
+	return result;	
 }
 
 CMD_SETROTATION_f( arg_list )

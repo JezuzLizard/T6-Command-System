@@ -27,8 +27,12 @@ main()
 	level.custom_commands_page_max = 5;
 	level.custom_commands_listener_timeout = getDvarIntDefault( "tcs_cmd_listener_timeout", 12 );
 	level.custom_commands_cooldown_time = getDvarIntDefault( "tcs_cmd_cd", 5 );
-	level.custom_commands_tokens = getDvarStringDefault( "tcs_cmd_tokens", "/" ); //separated by spaces, good tokens are generally not used at the start of a normal message 
-	// "/" is recommended for anonymous command usage, other tokens are not anonymous
+	tokens = getDvarStringDefault( "tcs_cmd_tokens", "" ); //separated by spaces, good tokens are generally not used at the start of a normal message 
+	if ( tokens != "" )
+	{
+		level.custom_commands_tokens = strTok( tokens, " " );
+	}
+	// "/" is always useable by default
 	CMD_INIT_PERMS();
 	INIT_MOD_INTEGRATIONS();
 	level.custom_commands = [];
@@ -46,7 +50,9 @@ main()
 	CMD_ADDCOMMAND( "admin a", "restart mr", "admin:restart", ::CMD_RESTART_f, true );
 	CMD_ADDCOMMAND( "admin a", "rotate r", "admin:rotate", ::CMD_ROTATE_f, true );
 	CMD_ADDCOMMAND( "admin a", "changemap cm", "admin:changemap <mapalias>", ::CMD_CHANGEMAP_f, true );
-	CMD_ADDCOMMAND( "admin a", "setrotation sr", "admin:setrotation <rotationdvar", ::CMD_SETROTATION_f );
+	CMD_ADDCOMMAND( "admin a", "setrotation sr", "admin:setrotation <rotationdvar>", ::CMD_SETROTATION_f );
+	CMD_ADDCOMMAND( "admin a", "mute m", "admin:mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f );
+	CMD_ADDCOMMAND( "admin a", "unmute um", "admin:unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f );
 	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
 	CMD_ADDCOMMAND( "vote v", "list l", "vote:list", ::CMD_UTILITY_VOTELIST_f, true );
 
@@ -60,7 +66,23 @@ main()
 	level thread COMMAND_BUFFER();
 	level thread dvar_command_watcher();
 	level thread end_commands_on_end_game();
+	onPlayerSay( ::check_mute );
 	level notify( "tcs_init_done" );
+}
+
+check_mute( text, mode )
+{
+	// mode == 0 -> all
+	// mode == 1 -> team
+	// self -> player that sent the message
+
+	if ( is_true( self.chat_muted ) )
+	{
+		level COM_PRINTF( "tell", "notitle", va( "You were muted for %s minutes. %s minutes remaining", self.chat_muted_duration_minutes, self.chat_muted_remaining_minutes ), self );
+		return false;
+	}
+	// returning `false` will hide the message, anything else will not
+	return true;
 }
 
 dvar_command_watcher()
@@ -92,18 +114,22 @@ COMMAND_BUFFER()
 		{
 			player = level.server;
 		}
+		if ( is_true( player.chat_muted ) )
+		{
+			continue;
+		}
 		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
 		{
 			level COM_PRINTF( channel, "cmderror", va( "You cannot use another command for %s seconds", player.cmd_cooldown + "" ), player );
 			continue;
 		}
 		message = toLower( message );
+		found_listener = false;
 		if ( array_validate( player.cmd_listeners ) )
 		{
 			listener_cmds_args = strTok( message, " " );
 			cmdname = listener_cmds_args[ 0 ];
 			listener_keys = getArrayKeys( player.cmd_listeners );
-			found_listener = false;
 			foreach ( listener in listener_keys )
 			{
 				if ( CMD_ISCOMMANDLISTENER( listener, cmdname ) && player CMD_ISCOMMANDLISTENER_ACTIVE( listener ) )
@@ -151,8 +177,8 @@ COMMAND_BUFFER()
 
 end_commands_on_end_game()
 {
-	level waittill( "end_game" );
-	wait 15;
+	level waittill_either( "end_game", "game_ended" );
+	wait 10;
 	level notify( "end_commands" );
 }
 

@@ -537,11 +537,14 @@ getDvarStringDefault( dvarname, default_value )
 
 is_command_token( char )
 {
-	foreach ( token in level.custom_commands_tokens )
+	if ( isDefined( level.custom_commands_tokens ) )
 	{
-		if ( char == token )
+		foreach ( token in level.custom_commands_tokens )
 		{
-			return true;
+			if ( char == token )
+			{
+				return true;
+			}
 		}
 	}
 	return false;
