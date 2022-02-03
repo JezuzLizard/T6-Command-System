@@ -136,7 +136,7 @@ find_map_data_from_alias( alias )
 				case "gcorn":
 				case "gcornfield":
 					result[ "gamemode" ] = "grief";
-					result[ "location" ] = "power";
+					result[ "location" ] = "cornfield";
 					result[ "mapname" ] = "zm_transit";
 					break;
 				case "sd":
@@ -162,7 +162,7 @@ find_map_data_from_alias( alias )
 				case "scorn":
 				case "scornfield":
 					result[ "gamemode" ] = "standard";
-					result[ "location" ] = "power";
+					result[ "location" ] = "cornfield";
 					result[ "mapname" ] = "zm_transit";
 					break;
 				default:
@@ -506,22 +506,6 @@ find_player_in_server( clientnum_guid_or_name )
 	return undefined;
 }
 
-get_alias_index( alias, array_of_aliases )
-{
-	for ( i = 0; i < array_of_aliases.size; i++ )
-	{
-		alias_keys = strTok( array_of_aliases[ i ], " " );
-		for ( j = 0; j < alias_keys.size; j++ )
-		{
-			if ( alias == alias_keys[ j ] )
-			{
-				return i;
-			}
-		}
-	}
-	return -1;
-}
-
 getDvarStringDefault( dvarname, default_value )
 {
 	cur_dvar_value = getDvar( dvarname );
@@ -774,16 +758,14 @@ is_odd( int )
 	return ( int % 2 ) == 1;
 }
 
-CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmdusage, cmdfunc, is_threaded_cmd )
+CMD_ADDCOMMAND( cmdname, cmdaliases, cmdusage, cmdfunc, cmdpower, is_threaded_cmd )
 {
-	if ( !isDefined( level.custom_commands[ namespace_aliases ] ) )
-	{
-		level.custom_commands[ namespace_aliases ] = [];
-		level.custom_commands_namespaces_total++;
-	}
-	level.custom_commands[ namespace_aliases ][ cmdaliases ] = spawnStruct();
-	level.custom_commands[ namespace_aliases ][ cmdaliases ].usage = cmdusage;
-	level.custom_commands[ namespace_aliases ][ cmdaliases ].func = cmdfunc;
+	aliases = strTok( cmdaliases, " " );
+	level.custom_commands[ cmdname ] = spawnStruct();
+	level.custom_commands[ cmdname ].usage = cmdusage;
+	level.custom_commands[ cmdname ].func = cmdfunc;
+	level.custom_commands[ cmdname ].aliases = aliases;
+	level.custom_commands[ cmdname ].power = cmdpower;
 	level.custom_commands_total++;
 	if ( ceil( level.custom_commands_total / level.custom_commands_page_max ) >= level.custom_commands_page_count )
 	{
@@ -791,10 +773,11 @@ CMD_ADDCOMMAND( namespace_aliases, cmdaliases, cmdusage, cmdfunc, is_threaded_cm
 	}
 	if ( is_true( is_threaded_cmd ) )
 	{
-		level.custom_threaded_commands[ cmdaliases ] = true;
+		level.custom_threaded_commands[ cmdname ] = true;
 	}
-	// sv_cmdname = strTok( cmdaliases, " " );
-	// addCommand( sv_cmdname, cmdfunc );
+
+	//New function added by fed's plugin that allows you to use a command in the server console.
+	addCommand( cmdname, cmdfunc );
 }
 
 VOTE_ADDVOTEABLE( vote_type_aliases, usage, pre_vote_execute_func, post_vote_execute_func )
@@ -817,85 +800,38 @@ VOTE_ADDVOTEABLE( vote_type_aliases, usage, pre_vote_execute_func, post_vote_exe
 	}
 }
 
-CMD_EXECUTE( namespace, cmdname, arg_list )
+CMD_EXECUTE( cmdname, arg_list )
 {
-	channel = "";
-	indexable_cmdname = "";
-	is_threaded_cmd = false;
-	if ( namespace != "" )
+	if ( is_true( level.custom_threaded_commands[ cmdname ] ) )
 	{
-		cmd_keys = getArrayKeys( level.custom_commands[ namespace ] );
-		cmd_keys_index = get_alias_index( cmdname, cmd_keys );
-		if ( cmd_keys_index != -1 )
-		{
-			indexable_cmdname = cmd_keys[ cmd_keys_index ];
-			if ( is_true( level.custom_threaded_commands[ indexable_cmdname ] ) )
-			{
-				is_threaded_cmd = true;
-			}
-		}
+		self thread [[ level.custom_commands[ cmdname ].func ]]( arg_list );
+		return;
 	}
 	else 
 	{
-		namespace_keys = getArrayKeys( level.custom_commands );
-		foreach ( namespace_key in namespace_keys )
-		{
-			cmd_keys = getArrayKeys( level.custom_commands[ namespace_key ] );
-			cmd_keys_index = get_alias_index( cmdname, cmd_keys );
-			if ( cmd_keys_index != -1 )
-			{
-				namespace = namespace_key;
-				indexable_cmdname = cmd_keys[ cmd_keys_index ];
-				if ( is_true( level.custom_threaded_commands[ indexable_cmdname ] ) )
-				{
-					is_threaded_cmd = true;
-				}
-				break;
-			}
-		}
-	}
-	can_execute_cmd = indexable_cmdname != "";
-	if ( can_execute_cmd )
-	{
-		if ( is_threaded_cmd )
-		{
-			self thread [[ level.custom_commands[ namespace ][ indexable_cmdname ].func ]]( arg_list );
-		}
-		else 
-		{
-			result = self [[ level.custom_commands[ namespace ][ indexable_cmdname ].func ]]( arg_list );
-		}
+		result = [];
+		result = self [[ level.custom_commands[ cmdname ].func ]]( arg_list );
 	}
 	channel = "tell";
 	if ( is_true( self.is_server ) )
 	{
 		channel = "con";
 	}
-	if ( array_validate( result ) )
+	if ( result[ "filter" ] != "cmderror" )
 	{
-		if ( result[ "filter" ] != "cmderror" )
+		cmd_log = va( "%s executed %s", self.name, result[ "message" ] );
+		level COM_PRINTF( "g_log", result[ "filter" ], cmd_log, self );
+		if ( isDefined( result[ "channels" ] ) )
 		{
-			cmd_log = va( "%s executed %s", self.name, result[ "message" ] );
-			level COM_PRINTF( "g_log", result[ "filter" ], cmd_log, self );
-			if ( isDefined( result[ "channels" ] ) )
-			{
-				level COM_PRINTF( result[ "channels" ], result[ "filter" ], result[ "message" ], self );
-			}
-			else 
-			{
-				level COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
-			}
+			level COM_PRINTF( result[ "channels" ], result[ "filter" ], result[ "message" ], self );
 		}
-		else if ( !is_threaded_cmd )
+		else 
 		{
-			if ( indexable_cmdname == "" )
-			{
-				level COM_PRINTF( channel, "cmderror", va( "Command %s not found", cmdname ), self );
-			}
-			else 
-			{
-				level COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
-			}
+			level COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
 		}
+	}
+	else
+	{
+		level COM_PRINTF( channel, result[ "filter" ], result[ "message" ], self );
 	}
 }

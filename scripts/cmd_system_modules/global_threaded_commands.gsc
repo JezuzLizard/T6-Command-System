@@ -267,77 +267,68 @@ CMD_UTILITY_CMDLIST_f( arg_list )
 	namespace_filter = arg_list[ 0 ];
 	cmds_to_display = [];
 	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
-	namespace_keys = getArrayKeys( level.custom_commands );
 	current_page = 1;
 	user_defined_page = 1;
 	remaining_cmds = level.custom_commands_total;
-	for ( i = 0; i < namespace_keys.size; i++ )
+	cmdnames = getArrayKeys( level.custom_commands );
+	for ( i = 0; i < cmdnames.size; i++ )
 	{
-		if ( !isDefined( namespace_filter ) || isSubStr( namespace_keys[ i ], namespace_filter ) )
+		if ( self has_permission_for_cmd( cmdnames[ i ] ) )
 		{
-			namespace_aliases = strTok( namespace_keys[ i ], " " );
-			cmdnames = getArrayKeys( level.custom_commands[ namespace_keys[ i ] ] );
-			for ( j = 0; j < cmdnames.size; j++ )
+			message = va( "^4%s", level.custom_commands[ cmdnames[ i ] ].usage );
+			if ( channel == "con" )
 			{
-				cmd_aliases = strTok( cmdnames[ j ], " " );
-				if ( self has_permission_for_cmd( namespace_aliases[ 0 ], cmd_aliases[ 0 ] ) )
+				level COM_PRINTF( channel, "notitle", message, self );
+			}
+			else 
+			{
+				cmds_to_display[ cmds_to_display.size ] = message;
+			}
+		}
+		remaining_cmds--;
+		if ( ( cmds_to_display.size > level.custom_commands_page_max ) && channel == "tell" && remaining_cmds != 0 )
+		{
+			if ( current_page == user_defined_page )
+			{
+				foreach ( message in cmds_to_display )
 				{
-					message = va( "^4%s", level.custom_commands[ namespace_keys[ i ] ][ cmdnames[ j ] ].usage );
-					if ( channel == "con" )
+					level COM_PRINTF( channel, "cmdinfo", message, self );
+				}
+				level COM_PRINTF( channel, "cmdinfo", va( "Displaying page %s out of %s do /showmore or /page(num) to display more commands.", current_page + "", level.custom_commands_page_count + "" ), self );
+				self setup_command_listener( "listener_cmdlist" );
+				result = self wait_command_listener( "listener_cmdlist" );
+				self clear_command_listener( "listener_cmdlist" );
+				if ( !isDefined( result[ 0 ] ) || result[ 0 ] == "timeout" )
+				{
+					return;
+				}
+				else if ( isSubStr( result[ 0 ], "page" ) )
+				{
+					if ( !isDefined( result[ 1 ] ) )
 					{
-						level COM_PRINTF( channel, "cmdinfo", message, self );
+						level COM_PRINTF( channel, "cmderror", va( "Page number arg sent to utility:cmdlist is undefined. Valid inputs are 1 thru %s.", level.custom_commands_page_count + "" ), self );
+						return;
 					}
-					else 
+					user_defined_page = int( result[ 1 ] );
+					if ( user_defined_page > level.custom_commands_page_count || user_defined_page == 0 )
 					{
-						cmds_to_display[ cmds_to_display.size ] = message;
+						level COM_PRINTF( channel, "cmderror", va( "Page number %s sent to utility:cmdlist is invalid. Valid inputs are 1 thru %s.", result[ 1 ], level.custom_commands_page_count + "" ), self );
+						return;
 					}
 				}
-				remaining_cmds--;
-				if ( ( cmds_to_display.size > level.custom_commands_page_max ) && channel == "tell" && remaining_cmds != 0 )
+				else if ( result[ 0 ] == "showmore" )
 				{
-					if ( current_page == user_defined_page )
-					{
-						foreach ( message in cmds_to_display )
-						{
-							level COM_PRINTF( channel, "cmdinfo", message, self );
-						}
-						level COM_PRINTF( channel, "cmdinfo", va( "Displaying page %s out of %s do /showmore or /page(num) to display more commands.", current_page + "", level.custom_commands_page_count + "" ), self );
-						self setup_command_listener( "listener_cmdlist" );
-						result = self wait_command_listener( "listener_cmdlist" );
-						self clear_command_listener( "listener_cmdlist" );
-						if ( !isDefined( result[ 0 ] ) || result[ 0 ] == "timeout" )
-						{
-							return;
-						}
-						else if ( isSubStr( result[ 0 ], "page" ) )
-						{
-							user_defined_page = int( result[ 1 ] );
-							if ( !isDefined( user_defined_page ) )
-							{
-								level COM_PRINTF( channel, "cmderror", va( "Page number arg sent to utility:cmdlist is undefined. Valid inputs are 1 thru %s.", level.custom_commands_page_count + "" ), self );
-								return;
-							}
-							if ( user_defined_page > level.custom_commands_page_count || user_defined_page == 0 )
-							{
-								level COM_PRINTF( channel, "cmderror", va( "Page number %s sent to utility:cmdlist is invalid. Valid inputs are 1 thru %s.", result[ 1 ], level.custom_commands_page_count + "" ), self );
-								return;
-							}
-						}
-						else if ( result[ 0 ] == "showmore" )
-						{
-							user_defined_page++;
-						}
-					}
-					current_page++;
-					cmds_to_display = [];
+					user_defined_page++;
 				}
-				else if ( remaining_cmds == 0 )
-				{
-					foreach ( message in cmds_to_display )
-					{
-						level COM_PRINTF( channel, "cmdinfo", message, self );
-					}
-				}
+			}
+			current_page++;
+			cmds_to_display = [];
+		}
+		else if ( remaining_cmds == 0 )
+		{
+			foreach ( message in cmds_to_display )
+			{
+				level COM_PRINTF( channel, "cmdinfo", message, self );
 			}
 		}
 	}

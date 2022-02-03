@@ -21,7 +21,6 @@ main()
 	level.server.name = "Server";
 	level.server.is_server = true;
 	level.custom_commands_restart_countdown = 5;
-	level.custom_commands_namespaces_total = 0;
 	level.custom_commands_total = 0;
 	level.custom_commands_page_count = 0;
 	level.custom_commands_page_max = 5;
@@ -36,25 +35,25 @@ main()
 	CMD_INIT_PERMS();
 	INIT_MOD_INTEGRATIONS();
 	level.custom_commands = [];
-	CMD_ADDCOMMAND( "admin a", "cvar cv", "admin:cvar <name|guid|clientnum> <cvarname> <newval>", ::CMD_CVAR_f );
-	CMD_ADDCOMMAND( "admin a", "kick k", "admin:kick <name|guid|clientnum>", ::CMD_ADMIN_KICK_f );
-	CMD_ADDCOMMAND( "admin a", "lock l", "admin:lock <password>", ::CMD_LOCK_SERVER_f );
-	CMD_ADDCOMMAND( "admin a", "unlock ul", "admin:unlock", ::CMD_UNLOCK_SERVER_f );
-	CMD_ADDCOMMAND( "admin a", "dvar d", "admin:dvar <dvarname> <newval>", ::CMD_SERVER_DVAR_f );
-	CMD_ADDCOMMAND( "admin a", "cvarall ca", "admin:cvarall <dvarname> <newval", ::CMD_CVARALL_f );
-	CMD_ADDCOMMAND( "admin a", "nextmap nm", "admin:nextmap <mapalias>", ::CMD_NEXTMAP_f );
-	CMD_ADDCOMMAND( "admin a", "resetrotation rr", "admin:resetrotation", ::CMD_RESETROTATION_f );
-	CMD_ADDCOMMAND( "admin a", "randomnextmap rnm", "admin:randomnextmap", ::CMD_RANDOMNEXTMAP_f );
-	CMD_ADDCOMMAND( "utility u", "cmdlist cl", "utility:cmdlist [namespace]", ::CMD_UTILITY_CMDLIST_f, true );
-	CMD_ADDCOMMAND( "admin a", "playerlist plist", "admin:playerlist [team]", ::CMD_PLAYERLIST_f, true );
-	CMD_ADDCOMMAND( "admin a", "restart mr", "admin:restart", ::CMD_RESTART_f, true );
-	CMD_ADDCOMMAND( "admin a", "rotate r", "admin:rotate", ::CMD_ROTATE_f, true );
-	CMD_ADDCOMMAND( "admin a", "changemap cm", "admin:changemap <mapalias>", ::CMD_CHANGEMAP_f, true );
-	CMD_ADDCOMMAND( "admin a", "setrotation sr", "admin:setrotation <rotationdvar>", ::CMD_SETROTATION_f );
-	CMD_ADDCOMMAND( "admin a", "mute m", "admin:mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f );
-	CMD_ADDCOMMAND( "admin a", "unmute um", "admin:unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f );
-	CMD_ADDCOMMAND( "vote v", "start s", "vote:start <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, true );
-	CMD_ADDCOMMAND( "vote v", "list l", "vote:list", ::CMD_UTILITY_VOTELIST_f, true );
+	CMD_ADDCOMMAND( "cvar", "cvar cv", "cvar <name|guid|clientnum> <cvarname> <newval>", ::CMD_CVAR_f, 80 );
+	CMD_ADDCOMMAND( "kick", "kick k", "kick <name|guid|clientnum>", ::CMD_ADMIN_KICK_f, 100 );
+	CMD_ADDCOMMAND( "lock", "lock l", "lock <password>", ::CMD_LOCK_SERVER_f, 40 );
+	CMD_ADDCOMMAND( "unlock", "unlock ul", "unlock", ::CMD_UNLOCK_SERVER_f );
+	CMD_ADDCOMMAND( "dvar", "dvar dv", "dvar <dvarname> <newval>", ::CMD_SERVER_DVAR_f, 80 );
+	CMD_ADDCOMMAND( "cvarall", "cvarall cva", "cvarall <dvarname> <newval", ::CMD_CVARALL_f, 80 );
+	CMD_ADDCOMMAND( "nextmap", "nextmap nm", "nextmap <mapalias>", ::CMD_NEXTMAP_f, 20 );
+	CMD_ADDCOMMAND( "resetrotation", "resetrotation rr", "resetrotation", ::CMD_RESETROTATION_f, 20 );
+	CMD_ADDCOMMAND( "randomnextmap", "randomnextmap rnm", "randomnextmap", ::CMD_RANDOMNEXTMAP_f, 20 );
+	CMD_ADDCOMMAND( "cmdlist", "cmdlist cl", "cmdlist", ::CMD_UTILITY_CMDLIST_f, 1, true );
+	CMD_ADDCOMMAND( "playerlist", "playerlist plist", "playerlist [team]", ::CMD_PLAYERLIST_f, 20, true );
+	CMD_ADDCOMMAND( "restart", "restart mr", "restart", ::CMD_RESTART_f, 40, true );
+	CMD_ADDCOMMAND( "rotate", "rotate r", "rotate", ::CMD_ROTATE_f, 40, true );
+	CMD_ADDCOMMAND( "changemap", "changemap cm", "changemap <mapalias>", ::CMD_CHANGEMAP_f, 40, true );
+	CMD_ADDCOMMAND( "setrotation", "setrotation sr", "setrotation <rotationdvar>", ::CMD_SETROTATION_f, 20 );
+	CMD_ADDCOMMAND( "mute", "mute m", "mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f, 40 );
+	CMD_ADDCOMMAND( "unmute", "unmute um", "unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f, 40 );
+	CMD_ADDCOMMAND( "votestart", "votestart vs", "votestart <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, 1, true );
+	CMD_ADDCOMMAND( "votelist", "votelist vl", "votelist", ::CMD_UTILITY_VOTELIST_f, 1, true );
 
 	VOTE_INIT();
 
@@ -93,7 +92,7 @@ dvar_command_watcher()
 		dvar_value = getDvar( "scrcmd" );
 		if ( dvar_value != "" )
 		{
-			level notify( "say", dvar_value, undefined );
+			level notify( "say", dvar_value, undefined, false );
 			setDvar( "scrcmd", "" );
 		}
 		wait 0.05;
@@ -116,6 +115,7 @@ COMMAND_BUFFER()
 		}
 		if ( is_true( player.chat_muted ) )
 		{
+			level COM_PRINTF( channel, "cmderror", "You cannot use commands while muted", self );
 			continue;
 		}
 		if ( isDefined( player.cmd_cooldown ) && player.cmd_cooldown > 0 )
@@ -146,8 +146,9 @@ COMMAND_BUFFER()
 		}
 		channel = player COM_GET_CMD_FEEDBACK_CHANNEL();
 		multi_cmds = parse_cmd_message( message );
-		if ( !array_validate( multi_cmds ) )
+		if ( multi_cmds.size < 1 )
 		{
+			level COM_PRINTF( channel, "cmderror", "Invalid command", self );
 			continue;
 		}
 		if ( multi_cmds.size > 1 && !player can_use_multi_cmds() )
@@ -159,16 +160,15 @@ COMMAND_BUFFER()
 		}
 		for ( cmd_index = 0; cmd_index < multi_cmds.size; cmd_index++ )
 		{
-			namespace = multi_cmds[ cmd_index ][ "namespace" ];
 			cmdname = multi_cmds[ cmd_index ][ "cmdname" ];
 			args = multi_cmds[ cmd_index ][ "args" ];
-			if ( !player has_permission_for_cmd( namespace, cmdname ) )
+			if ( !player has_permission_for_cmd( cmdname ) )
 			{
 				level COM_PRINTF( channel, "cmderror", va( "You do not have permission to use %s command.", cmdname ), player );
 			}
-			else 
+			else
 			{
-				player CMD_EXECUTE( namespace, cmdname, args );
+				player CMD_EXECUTE( cmdname, args );
 				player thread CMD_COOLDOWN();
 			}
 		}
