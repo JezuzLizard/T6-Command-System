@@ -1,3 +1,6 @@
+// #define CMD_CONFIG_FILENAME "tcs_config.json"
+// #define CMD_PLAYERLIST_FILENAME "tcs_playerlist.json"
+
 FS_INIT()
 {
 	level.FS_basepath = va( "%s/scriptdata/", getDvar( "fs_homepath" ) );

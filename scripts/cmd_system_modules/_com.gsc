@@ -13,6 +13,9 @@ COM_INIT()
 	COM_ADDFILTER( "scrinfo", 1 );
 	COM_ADDFILTER( "scrwarning", 1 );
 	COM_ADDFILTER( "screrror", 1 );
+	COM_ADDFILTER( "permsinfo", 1 );
+	COM_ADDFILTER( "permswarning", 1 );
+	COM_ADDFILTER( "permserror", 1 ); 
 	COM_ADDFILTER( "debug", 0 );
 	COM_ADDFILTER( "obituary", 1 );
 	COM_ADDFILTER( "notitle", 1 );
@@ -24,7 +27,7 @@ COM_INIT()
 	COM_ADDCHANNEL( "say", ::COM_SAY );
 	COM_ADDCHANNEL( "tell", ::COM_TELL );
 	COM_ADDCHANNEL( "obituary", ::COM_OBITUARY );
-	COM_ADDCHANNEL( "scr_debug_log.txt", ::COM_DEBUG_LOGPRINT );
+	COM_ADDCHANNEL( "debug_log", ::COM_DEBUG_LOGPRINT );
 }
 
 COM_ADDFILTER( filter, default_value )
@@ -63,51 +66,31 @@ COM_IS_CHANNEL_ACTIVE( channel )
 
 COM_CAPS_MSG_TITLE( channel, filter, players )
 {
-	if ( channel == "g_log" || channel == "con" )
+	if ( filter == "notitle" || channel == "con" )
 	{
-		if ( channel == "g_log" && filter != "notitle" )
-		{
-			return va( "%s:", toUpper( filter ) );
-		}
-		else 
-		{
-			return "";
-		}
+		return "";
 	}
-	else
+	if ( channel == "g_log" )
 	{
-		if ( !isArray( players ) )
-		{
-			if ( is_true( players.is_server ) )
-			{
-				return "";
-			}
-		}
-		if ( isSubStr( filter, "error" ) )
-		{
-			color_code = "^1";
-		}
-		else if ( isSubStr( filter, "warning" ) )
-		{
-			color_code = "^3";
-		}
-		else if ( isSubStr( filter, "info" ) )
-		{
-			color_code = "^4";
-		}
-		else 
-		{
-			color_code = "";
-		}
-		if ( filter != "notitle" )
-		{
-			return va( "%s%s:", color_code, toUpper( filter ) );
-		}
-		else 
-		{
-			return "";
-		}
+		return toUpper( filter ) + ":";
 	}
+	if ( isSubStr( filter, "error" ) )
+	{
+		color_code = "^1";
+	}
+	else if ( isSubStr( filter, "warning" ) )
+	{
+		color_code = "^3";
+	}
+	else if ( isSubStr( filter, "info" ) )
+	{
+		color_code = "^2";
+	}
+	else 
+	{
+		color_code = "";
+	}
+	return color_code + toUpper( filter ) + ":";
 }
 
 COM_DEBUG_LOGPRINT( channel, message, players, arg_list )
@@ -149,23 +132,9 @@ COM_IPRINTLN( channel, message, players, arg_list )
 
 COM_IPRINTLNBOLD( channel, message, players, arg_list )
 {
-	if ( array_validate( players ) )
+	for ( i = 0; i < level.players.size; i++ )
 	{
-		for ( i = 0; i < players.size; i++ )
-		{
-			if ( isPlayer( players[ i ] ) && !is_true( players[ i ].is_server ) )
-			{
-				players[ i ] iPrintLnBold( message );
-			}
-		}
-	}
-	else if ( isDefined( players ) && !is_true( players.is_server ) )
-	{
-		players iPrintLnBold( message );
-	}
-	else 
-	{
-		COM_PRINT( "con", va( "COM_PRINTF() msg %s sent for channel %s has bad players arg", message, channel ) );
+		level.players[ i ] iPrintLnBold( message );
 	}
 }
 

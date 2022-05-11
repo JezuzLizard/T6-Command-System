@@ -2,12 +2,10 @@
 #include scripts/cmd_system_modules/_cmd_util;
 #include scripts/cmd_system_modules/_com;
 #include scripts/cmd_system_modules/_text_parser;
-#include scripts/cmd_system_modules/_vote;
 #include scripts/cmd_system_modules/_listener;
 #include scripts/cmd_system_modules/_perms;
 #include scripts/cmd_system_modules/global_commands;
 #include scripts/cmd_system_modules/global_threaded_commands;
-#include scripts/cmd_system_modules/global_voteables;
 #include scripts/cmd_system_modules/_filesystem;
 
 #include common_scripts/utility;
@@ -16,16 +14,36 @@
 main()
 {
 	COM_INIT();
-	FS_INIT();
 	level.server = spawnStruct();
 	level.server.name = "Server";
 	level.server.is_server = true;
 	level.custom_commands_restart_countdown = 5;
-	level.custom_commands_total = 0;
-	level.custom_commands_page_count = 0;
-	level.custom_commands_page_max = 5;
-	level.custom_commands_listener_timeout = getDvarIntDefault( "tcs_cmd_listener_timeout", 12 );
+	level.commands_total = 0;
+	level.commands_page_count = 0;
+	level.commands_page_max = 6;
 	level.custom_commands_cooldown_time = getDvarIntDefault( "tcs_cmd_cd", 5 );
+	level.tcs_use_silent_commands = getDvarIntDefault( "tcs_silent_cmds", 0 );
+	level.tcs_logprint_cmd_usage = getDvarIntDefault( "tcs_logprint_cmd_usage", 1 );
+	level.tcs_listener_timeout_time = getDvarFloatDefault( "tcs_listener_timeout_time", 10.0 );
+	level.CMD_POWER_NONE = 0;
+	level.CMD_POWER_USER = 1;
+	level.CMD_POWER_TRUSTED_USER = 20;
+	level.CMD_POWER_ELEVATED_USER = 40;
+	level.CMD_POWER_MODERATOR = 60;
+	level.CMD_POWER_CHEAT = 80;
+	level.CMD_POWER_HOST = 100;
+	level.TCS_RANK_NONE = "none";
+	level.TCS_RANK_USER = "user";
+	level.TCS_RANK_TRUSTED_USER = "trusted";
+	level.TCS_RANK_ELEVATED_USER = "elevated";
+	level.TCS_RANK_MODERATOR = "moderator";
+	level.TCS_RANK_CHEAT = "cheat";
+	level.TCS_RANK_HOST = "host";
+	level.FL_GODMODE = 1;
+	level.FL_DEMI_GODMODE = 2;
+	level.FL_NOTARGET = 4;
+	level.clientdvars = [];
+	level.CFL_NOCLIP = 1;
 	tokens = getDvarStringDefault( "tcs_cmd_tokens", "" ); //separated by spaces, good tokens are generally not used at the start of a normal message 
 	if ( tokens != "" )
 	{
@@ -34,39 +52,58 @@ main()
 	// "/" is always useable by default
 	CMD_INIT_PERMS();
 	INIT_MOD_INTEGRATIONS();
-	level.custom_commands = [];
-	CMD_ADDCOMMAND( "cvar", "cvar cv", "cvar <name|guid|clientnum> <cvarname> <newval>", ::CMD_CVAR_f, 80 );
-	CMD_ADDCOMMAND( "kick", "kick k", "kick <name|guid|clientnum>", ::CMD_ADMIN_KICK_f, 100 );
-	CMD_ADDCOMMAND( "lock", "lock l", "lock <password>", ::CMD_LOCK_SERVER_f, 40 );
-	CMD_ADDCOMMAND( "unlock", "unlock ul", "unlock", ::CMD_UNLOCK_SERVER_f );
-	CMD_ADDCOMMAND( "dvar", "dvar dv", "dvar <dvarname> <newval>", ::CMD_SERVER_DVAR_f, 80 );
-	CMD_ADDCOMMAND( "cvarall", "cvarall cva", "cvarall <dvarname> <newval", ::CMD_CVARALL_f, 80 );
-	CMD_ADDCOMMAND( "nextmap", "nextmap nm", "nextmap <mapalias>", ::CMD_NEXTMAP_f, 20 );
-	CMD_ADDCOMMAND( "resetrotation", "resetrotation rr", "resetrotation", ::CMD_RESETROTATION_f, 20 );
-	CMD_ADDCOMMAND( "randomnextmap", "randomnextmap rnm", "randomnextmap", ::CMD_RANDOMNEXTMAP_f, 20 );
-	CMD_ADDCOMMAND( "cmdlist", "cmdlist cl", "cmdlist", ::CMD_UTILITY_CMDLIST_f, 1, true );
-	CMD_ADDCOMMAND( "playerlist", "playerlist plist", "playerlist [team]", ::CMD_PLAYERLIST_f, 20, true );
-	CMD_ADDCOMMAND( "restart", "restart mr", "restart", ::CMD_RESTART_f, 40, true );
-	CMD_ADDCOMMAND( "rotate", "rotate r", "rotate", ::CMD_ROTATE_f, 40, true );
-	CMD_ADDCOMMAND( "changemap", "changemap cm", "changemap <mapalias>", ::CMD_CHANGEMAP_f, 40, true );
-	CMD_ADDCOMMAND( "setrotation", "setrotation sr", "setrotation <rotationdvar>", ::CMD_SETROTATION_f, 20 );
-	CMD_ADDCOMMAND( "mute", "mute m", "mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f, 40 );
-	CMD_ADDCOMMAND( "unmute", "unmute um", "unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f, 40 );
-	CMD_ADDCOMMAND( "votestart", "votestart vs", "votestart <voteable> [arg1] [arg2] [arg3] [arg4]", ::CMD_VOTESTART_f, 1, true );
-	CMD_ADDCOMMAND( "votelist", "votelist vl", "votelist", ::CMD_UTILITY_VOTELIST_f, 1, true );
+	level.tcs_add_server_command_func = ::CMD_ADDSERVERCOMMAND;
+	level.tcs_add_client_command_func = ::CMD_ADDCLIENTCOMMAND;
+	level.tcs_remove_server_command = ::CMD_REMOVESERVERCOMMAND;
+	level.tcs_remove_client_command = ::CMD_REMOVECLIENTCOMMAND;
+	level.server_commands = [];
+	CMD_ADDSERVERCOMMAND( "setcvar", "setcvar scv", "setcvar <name|guid|clientnum|self> <cvarname> <newval>", ::CMD_SETCVAR_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "kick", "kick k", "kick <name|guid|clientnum>", ::CMD_ADMIN_KICK_f, level.CMD_POWER_MODERATOR );
+	CMD_ADDSERVERCOMMAND( "lock", "lock lk", "lock <password>", ::CMD_LOCK_SERVER_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "unlock", "unlock ul", "unlock", ::CMD_UNLOCK_SERVER_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "dvar", "dvar dv", "dvar <dvarname> <newval>", ::CMD_SERVER_DVAR_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "cvarall", "cvarall cva", "cvarall <cvarname> <newval>", ::CMD_CVARALL_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "nextmap", "nextmap nm", "nextmap <mapalias>", ::CMD_NEXTMAP_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "resetrotation", "resetrotation rr", "resetrotation", ::CMD_RESETROTATION_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "randomnextmap", "randomnextmap rnm", "randomnextmap", ::CMD_RANDOMNEXTMAP_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "restart", "restart mr", "restart", ::CMD_RESTART_f, level.CMD_POWER_ELEVATED_USER, true );
+	CMD_ADDSERVERCOMMAND( "rotate", "rotate ro", "rotate", ::CMD_ROTATE_f, level.CMD_POWER_ELEVATED_USER, true );
+	CMD_ADDSERVERCOMMAND( "changemap", "changemap cm", "changemap <mapalias>", ::CMD_CHANGEMAP_f, level.CMD_POWER_ELEVATED_USER, true );
+	CMD_ADDSERVERCOMMAND( "setrotation", "setrotation sr", "setrotation <rotationdvar>", ::CMD_SETROTATION_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "mute", "mute m", "mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "unmute", "unmute um", "unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f, level.CMD_POWER_ELEVATED_USER );
+	CMD_ADDSERVERCOMMAND( "unmuteall", "unmuteall umall", "unmuteall", ::CMD_UNMUTEALL_f, level.CMD_POWER_ADMIN );
+	CMD_ADDSERVERCOMMAND( "muteall", "muteall mall", "muteall", ::CMD_MUTEALL_f, level.CMD_POWER_ADMIN );
+	CMD_ADDSERVERCOMMAND( "clantag", "clantag ct", "clantag <name|guid|clientnum> <newtag>", ::CMD_RENAME_f, level.CMD_POWER_ADMIN );
+	CMD_ADDSERVERCOMMAND( "givegod", "givegod ggd", "givegod <name|guid|clientnum|self>", ::CMD_GIVEGOD_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "givenotarget", "givenotarget gnt", "givenotarget <name|guid|clientnum|self>", ::CMD_GIVENOTARGET_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "giveinvisible", "giveinvisible ginv", "giveinvisible <name|guid|clientnum|self>", ::CMD_GIVEINVISIBLE_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "givenoclip", "givenoclip gino", "givenoclip <name|guid|clientnum|self>", ::CMD_GIVENOCLIP_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "setrank", "setrank sr", "setrank <name|guid|clientnum|self> <rank>", ::CMD_SETRANK_f, level.CMD_POWER_ADMIN );
 
-	VOTE_INIT();
+	CMD_ADDSERVERCOMMAND( "execonallplayers", "execonallplayers execonall exall", "execonallplayers <cmdname> [cmdargs] ...", ::CMD_EXECONALLPLAYERS_f, level.CMD_POWER_HOST );
+	CMD_ADDSERVERCOMMAND( "execonteam", "execonteam execteam exteam", "execonteam <team> <cmdname> [cmdargs] ...", ::CMD_EXECONTEAM_f, level.CMD_POWER_HOST );
 
-	CMD_ADDCOMMANDLISTENER( "listener_cmdlist", "showmore" );
-	CMD_ADDCOMMANDLISTENER( "listener_cmdlist", "page" );
-	CMD_ADDCOMMANDLISTENER( "listener_playerlist", "showmore" );
-	CMD_ADDCOMMANDLISTENER( "listener_playerlist", "page" );
-
+	level.client_commands = [];
+	CMD_ADDCLIENTCOMMAND( "togglehud", "togglehud toghud", "togglehud", ::CMD_TOGGLEHUD_f, level.CMD_POWER_NONE );
+	CMD_ADDCLIENTCOMMAND( "god", "god", "god", ::CMD_GOD_f, level.CMD_POWER_CHEAT );
+	CMD_ADDCLIENTCOMMAND( "notarget", "notarget nt", "notarget", ::CMD_NOTARGET_f, level.CMD_POWER_CHEAT );
+	CMD_ADDCLIENTCOMMAND( "invisible", "invisible invis", "invisible", ::CMD_INVISIBLE_f, level.CMD_POWER_CHEAT );
+	CMD_ADDCLIENTCOMMAND( "printorigin", "printorigin printorg por", "printorigin", ::CMD_PRINTORIGIN_f, level.CMD_POWER_NONE );
+	CMD_ADDCLIENTCOMMAND( "printangles", "printangles printang pan", "printangles", ::CMD_PRINTANGLES_f, level.CMD_POWER_NONE );
+	CMD_ADDCLIENTCOMMAND( "bottomlessclip", "bottomlessclip botclip bcl", "bottomlessclip", ::CMD_BOTTOMLESSCLIP_f, level.CMD_POWER_CHEAT );
+	//CMD_ADDCLIENTCOMMAND( "teleport", "teleport tele", "teleport <name|guid|clientnum|origin>", ::CMD_TELEPORT_f, level.CMD_POWER_CHEAT );
+	CMD_ADDCLIENTCOMMAND( "cvar", "cvar cv", "cvar <cvarname> <newval>", ::CMD_CVAR_f, level.CMD_POWER_CHEAT );
+	CMD_ADDCLIENTCOMMAND( "cmdlist", "cmdlist cl", "cmdlist [pagenumber]", ::CMD_CMDLIST_f, level.CMD_POWER_NONE, true );
+	CMD_ADDCLIENTCOMMAND( "playerlist", "playerlist plist", "playerlist [pagenumber] [team]", ::CMD_PLAYERLIST_f, level.CMD_POWER_NONE, true );
+	CMD_ADDCLIENTCOMMAND( "showmore", "showmore show", "showmore", ::CMD_SHOWMORE_f, level.CMD_POWER_NONE );
+	CMD_ADDCLIENTCOMMAND( "page", "page pg", "page <pagenumber>", ::CMD_PAGE_f, level.CMD_POWER_NONE );
 	level thread COMMAND_BUFFER();
 	level thread dvar_command_watcher();
 	level thread end_commands_on_end_game();
+	level thread tcs_on_connect();
 	onPlayerSay( ::check_mute );
-	level notify( "tcs_init_done" );
+	level.command_init_done = true;
 }
 
 check_mute( text, mode )
@@ -74,26 +111,27 @@ check_mute( text, mode )
 	// mode == 0 -> all
 	// mode == 1 -> team
 	// self -> player that sent the message
-
-	if ( is_true( self.chat_muted ) )
+	cur_mute_duration = get_player_mute_duration_from_mute_list( self getGUID() );
+	if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0 )
 	{
-		level COM_PRINTF( "tell", "notitle", va( "You were muted for %s minutes. %s minutes remaining", self.chat_muted_duration_minutes, self.chat_muted_remaining_minutes ), self );
+		level COM_PRINTF( "tell", "notitle", va( "You are muted for %s minutes", cur_mute_duration ), self );
 		return false;
 	}
 	// returning `false` will hide the message, anything else will not
 	return true;
 }
 
-dvar_command_watcher()
+scr_dvar_command_watcher()
 {
 	level endon( "end_commands" );
+	wait 1;
 	while ( true )
 	{
-		dvar_value = getDvar( "scrcmd" );
+		dvar_value = getDvar( "tcscmd" );
 		if ( dvar_value != "" )
 		{
 			level notify( "say", dvar_value, undefined, false );
-			setDvar( "scrcmd", "" );
+			setDvar( "tcscmd", "" );
 		}
 		wait 0.05;
 	}
@@ -124,26 +162,6 @@ COMMAND_BUFFER()
 			continue;
 		}
 		message = toLower( message );
-		found_listener = false;
-		if ( array_validate( player.cmd_listeners ) )
-		{
-			listener_cmds_args = strTok( message, " " );
-			cmdname = listener_cmds_args[ 0 ];
-			listener_keys = getArrayKeys( player.cmd_listeners );
-			foreach ( listener in listener_keys )
-			{
-				if ( CMD_ISCOMMANDLISTENER( listener, cmdname ) && player CMD_ISCOMMANDLISTENER_ACTIVE( listener ) )
-				{
-					player CMD_EXECUTELISTENER( listener, listener_cmds_args );
-					found_listener = true;
-					break;
-				}
-			}
-			if ( found_listener )
-			{
-				continue;
-			}
-		}
 		channel = player COM_GET_CMD_FEEDBACK_CHANNEL();
 		multi_cmds = parse_cmd_message( message );
 		if ( multi_cmds.size < 1 )
@@ -162,13 +180,14 @@ COMMAND_BUFFER()
 		{
 			cmdname = multi_cmds[ cmd_index ][ "cmdname" ];
 			args = multi_cmds[ cmd_index ][ "args" ];
-			if ( !player has_permission_for_cmd( cmdname ) )
+			is_clientcmd = multi_cmds[ cmd_index ][ "is_clientcmd" ];
+			if ( !player has_permission_for_cmd( cmdname, is_clientcmd ) )
 			{
-				level COM_PRINTF( channel, "cmderror", va( "You do not have permission to use %s command.", cmdname ), player );
+				level COM_PRINTF( channel, "cmderror", "You do not have permission to use " + cmdname + " command", player );
 			}
 			else
 			{
-				player CMD_EXECUTE( cmdname, args );
+				player CMD_EXECUTE( cmdname, args, is_clientcmd, level.tcs_use_silent_commands, level.tcs_logprint_cmd_usage );
 				player thread CMD_COOLDOWN();
 			}
 		}

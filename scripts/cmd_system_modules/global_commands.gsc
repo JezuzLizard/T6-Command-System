@@ -1,12 +1,19 @@
 #include scripts/cmd_system_modules/_cmd_util;
 #include scripts/cmd_system_modules/_com;
 #include scripts/cmd_system_modules/_listener;
+#include scripts/cmd_system_modules/_penalties;
 #include scripts/cmd_system_modules/_perms;
 #include scripts/cmd_system_modules/_text_parser;
 #include scripts/cmd_system_modules/_filesystem;
 
 #include common_scripts/utility;
 #include maps/mp/_utility;
+
+// #define FL_GODMODE 0x1
+// #define FL_DEMI_GODMODE 0x2
+// #define FL_NOTARGET 0x4
+
+// #define CFL_NOCLIP 0x1
 
 CMD_RANDOMNEXTMAP_f( arg_list )
 {
@@ -27,7 +34,7 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 		string = getDvarStringDefault( "tcs_random_map_list", "aftermath cargo carrier drone express hijacked meltdown overflow plaza raid slums village turbine yemen nuketown downhill mirage hydro grind encore magma vertigo studio uplink detour cove rush dig frost pod takeoff" );
 	}
 	alias_keys = strTok( string, " " );
-	random_alias = random( alias_keys );
+	random_alias = alias_keys[ randomInt( alias_keys.size ) ];
 	rotation_data = find_map_data_from_alias( random_alias );
 	if ( sessionModeIsZombiesGame() )
 	{
@@ -39,7 +46,7 @@ CMD_RANDOMNEXTMAP_f( arg_list )
 	}
 	setDvar( "sv_maprotationCurrent", rotation_string );
 	result[ "filter" ] = "cmdinfo";
-	result[ "message" ] = "admin:randomnextmap: Set new secret random map";
+	result[ "message" ] = "Set new secret random map";
 	return result;
 }
 
@@ -48,7 +55,7 @@ CMD_RESETROTATION_f( arg_list )
 	result = [];
 	setDvar( "sv_maprotationCurrent", getDvar( "sv_maprotation" ) );
 	result[ "filter" ] = "cmdinfo";
-	result[ "message" ] = "admin:resetrotation: Successfully reset the map rotation";
+	result[ "message" ] = "Successfully reset the map rotation";
 	return result;
 }
 
@@ -73,18 +80,18 @@ CMD_NEXTMAP_f( arg_list )
 			}
 			setDvar( "sv_maprotationCurrent", rotation_string );
 			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "admin:nextmap: Successfully set next map to %s", display_name );
+			result[ "message" ] = va( "Successfully set next map to %s", display_name );
 		}
 		else 
 		{
 			result[ "filter" ] = "cmderror";
-			result[ "message" ] = va( "admin:nextmap: Bad map alias %s", alias );
+			result[ "message" ] = va( "Bad map alias %s", alias );
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:nextmap: Failed to set next map due to missing param";
+		result[ "message" ] = "Usage nextmap <mapalias>";
 	}
 	return result;
 }
@@ -97,12 +104,12 @@ CMD_LOCK_SERVER_f( arg_list )
 		password = arg_list[ 0 ];
 		setDvar( "g_password", password );
 		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "admin:lock: Successfully locked the server with key %s", password );
+		result[ "message" ] = va( "Successfully locked the server with key %s", password );
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:lock: Failed to lock server due to missing <password> param";
+		result[ "message" ] = "Usage lock <password>";
 	}
 	return result;
 }
@@ -112,7 +119,7 @@ CMD_UNLOCK_SERVER_f( arg_list )
 	result = [];
 	setDvar( "g_password", "" );
 	result[ "filter" ] = "cmdinfo";
-	result[ "message" ] = "admin:unlock: Successfully unlocked the server";
+	result[ "message" ] = "Successfully unlocked the server";
 	return result;
 }
 
@@ -125,12 +132,12 @@ CMD_SERVER_DVAR_f( arg_list )
 		dvar_value = arg_list[ 1 ];
 		setDvar( dvar_name, dvar_value );
 		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "admin:dvar: Successfully set %s to %s", dvar_name, dvar_value );
+		result[ "message" ] = va( "Successfully set %s to %s", dvar_name, dvar_value );
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:dvar: Failed to set dvar due to missing params";
+		result[ "message" ] = "Usage dvar <dvarname> <newval>";
 	}
 	return result;
 }
@@ -138,25 +145,25 @@ CMD_SERVER_DVAR_f( arg_list )
 CMD_ADMIN_KICK_f( arg_list )
 {
 	result = [];
-	kicked = false;
 	if ( array_validate( arg_list ) )
 	{
 		player = find_player_in_server( arg_list[ 0 ] );
 		if ( isDefined( player ) )
 		{
 			kick( player getEntityNumber() );
-			kicked = true;
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully kicked %s", player.name );
 		}
-	}
-	if ( kicked )
-	{
-		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "admin:kick: Successfully kicked %s", player.name );
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
+		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:kick: Could not find player";
+		result[ "message" ] = "Usage kick <name|guid|clientnum>";
 	}
 	return result;
 }
@@ -172,18 +179,22 @@ CMD_CVARALL_f( arg_list )
 		{
 			player setClientDvar( dvar_name, dvar_value );
 		}
+		new_dvar = [];
+		new_dvar[ "name" ] = dvar_name;
+		new_dvar[ "value" ] = dvar_value; 
+		level.clientdvars[ level.clientdvars.size ] = new_dvar;
 		result[ "filter" ] = "cmdinfo";
-		result[ "message" ] = va( "admin:cvarall: Successfully set %s to %s for all players", dvar_name, dvar_value );
+		result[ "message" ] = va( "Successfully set %s to %s for all players", dvar_name, dvar_value );
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:cvarall: Failed to set cvar for all players due to missing params";
+		result[ "message" ] = "Usage cvarall <cvarname> <newval>";
 	}
 	return result;
 }
 
-CMD_CVAR_f( arg_list )
+CMD_SETCVAR_f( arg_list )
 {
 	result = [];
 	if ( array_validate( arg_list ) && arg_list.size == 3 )
@@ -195,18 +206,18 @@ CMD_CVAR_f( arg_list )
 			dvar_value = arg_list[ 2 ];
 			player setClientDvar( dvar_name, dvar_value );
 			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "admin:cvar: Successfully set %s %s to %s", player.name, dvar_name, dvar_value );
+			result[ "message" ] = va( "Successfully set %s %s to %s", player.name, dvar_name, dvar_value );
 		}
 		else 
 		{
 			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "admin:cvar: Could not find player";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:cvar: Failed to set cvar due to missing params";
+		result[ "message" ] = "Failed to set cvar due to missing params";
 	}
 	return result;
 }
@@ -216,39 +227,34 @@ CMD_MUTE_PLAYER_f( arg_list )
 	result = [];
 	if ( array_validate( arg_list ) )
 	{
+		player_object = arg_list[ 0 ];
+		duration = arg_list[ 1 ];
 		player = find_player_in_server( arg_list[ 0 ] );
 		if ( isDefined( player ) )
 		{
-			if ( !is_true( player.chat_muted ) )
+			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID();
+			if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0 )
 			{
-				if ( !is_true( player.is_admin ) )
-				{
-					player.chat_muted = true;
-					result[ "filter" ] = "cmdinfo";
-					result[ "message" ] = va( "admin:mute: Successfully muted %s until next map", player.name );
-				}
-				else 
-				{
-					result[ "filter" ] = "cmderror";
-					result[ "message" ] = va( "admin:mute: Failed to mute player %s player is admin", player.name );
-				}
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = va( "%s is already muted %s time left", player.name, cur_mute_duration );
 			}
-			else 
+			else
 			{
-				result[ "filter" ] = "cmderror";
-				result[ "message" ] = va( "admin:mute: Failed to mute player %s player already muted", player.name );
+				add_player_to_mute_list( player getGUID(), duration );
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = va( "Successfully muted %s for %s minutes", player.name, duration );
 			}
 		}
 		else 
 		{
 			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "admin:mute: Could not find player";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:mute: Failed to mute due to missing player arg";
+		result[ "message" ] = "Usage mute <name|guid|clientnum> [duration_in_minutes]";
 	}
 	return result;
 }
@@ -261,30 +267,43 @@ CMD_UNMUTE_PLAYER_f( arg_list )
 		player = find_player_in_server( arg_list[ 0 ] );
 		if ( isDefined( player ) )
 		{
-			if ( is_true( player.chat_muted ) )
+			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID();
+			if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0)
 			{
-				player.chat_muted = undefined;
+				remove_player_from_mute_list( player getGUID() );
 				result[ "filter" ] = "cmdinfo";
-				result[ "message" ] = va( "admin:unmute: Successfully unmuted %s", player.name );
+				result[ "message" ] = va( "Successfully unmuted %s", player.name );
 			}
 			else 
 			{
 				result[ "filter" ] = "cmderror";
-				result[ "message" ] = va( "admin:unmute: Failed to unmute player %s player not muted", player.name );
+				result[ "message" ] = va( "%s is not muted", player.name );
 			}
 		}
 		else 
 		{
 			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "admin:unmute: Could not find player";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:unmute: Failed to unmute due to missing player arg";
+		result[ "message" ] = "Usage unmute <name|guid|clientnum>";
 	}
 	return result;	
+}
+
+CMD_MUTEALL_f( arg_list )
+{
+	result = [];
+	return result;
+}
+
+CMD_UNMUTEALL_f( arg_list )
+{
+	result = [];
+	return result;
 }
 
 CMD_SETROTATION_f( arg_list )
@@ -297,19 +316,394 @@ CMD_SETROTATION_f( arg_list )
 		{
 			setDvar( "sv_maprotationCurrent", new_rotation );
 			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "admin:setrotation: Successfully set the rotation to %s's value", new_rotation );
-			return result;
+			result[ "message" ] = va( "Successfully set the rotation to %s's value", new_rotation );
 		}
 		else 
 		{
 			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "admin:setrotation: New rotation dvar is blank";
+			result[ "message" ] = "New rotation dvar is blank";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
-		result[ "message" ] = "admin:setrotation: Missing dvar name arg";
+		result[ "message" ] = "Usage: setrotation <rotationdvar>";
 	}
 	return result;
+}
+
+CMD_GIVEGOD_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( !isDefined( target ) )
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
+		}
+		else 
+		{
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully toggled godmode for %s", target.name );
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "Usage givegod <name|guid|clientnum|self>";
+	}
+	if ( isDefined( target ) )
+	{
+		if ( ( target.flags & level.FL_GODMODE ) != 0 )
+		{
+			target.flags &= level.FL_GODMODE;
+		}
+		else 
+		{
+			target.flags |= level.FL_GODMODE;
+		}
+	}
+	return result;
+}
+
+CMD_GIVENOTARGET_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( !isDefined( target ) )
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
+		}
+		else 
+		{
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully toggled notarget for %s", target.name );
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "Usage givenotarget <name|guid|clientnum|self>";
+	}
+	if ( isDefined( target ) )
+	{
+		if ( ( target.flags & level.FL_NOTARGET ) != 0 )
+		{
+			target.flags &= level.FL_NOTARGET;
+		}
+		else 
+		{
+			target.flags |= level.FL_NOTARGET;
+		}
+	}
+	return result;
+}
+
+CMD_GIVENOCLIP_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( !isDefined( target ) )
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
+		}
+		else 
+		{
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully toggled noclip for %s", target.name );
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "Usage givenoclip <name|guid|clientnum|self>";
+	}
+	if ( isDefined( target ) )
+	{
+		if ( ( target.flags & level.CFL_NOCLIP ) != 0 )
+		{
+			target.clientflags &= level.CFL_NOCLIP;
+		}
+		else 
+		{
+			target.clientflags |= level.CFL_NOCLIP;
+		}
+	}
+	return result;
+}
+
+CMD_CLANTAG_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( target ) )
+		{
+			if ( isDefined( arg_list[ 1 ] ) )
+			{
+				target setClanTag( arg_list[ 1 ] );
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = va( "Successfully set %s's clantag to %s", target.name, arg_list[ 0 ] );
+			}
+			else 
+			{
+				target setClanTag( "" );
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = va( "Successfully reset %s's clantag", target.name );
+			}
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "Usage: clantag <name|guid|clientnum> <newtag>";
+	}
+	return result;
+}
+
+CMD_GIVEINVISIBLE_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		target = self find_player_in_server( arg_list[ 0 ] );
+		if ( !isDefined( target ) )
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
+		}
+		else 
+		{
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = "Toggled invisibility for " + target.name;
+		}
+	}
+	else
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "Usage giveinvisible <name|guid|clientnum|self>";
+	}
+	if ( isDefined( target ) )
+	{
+		if ( !is_true( target.tcs_is_invisible ) )
+		{
+			target hide();
+			target.tcs_is_invisible = true;
+		}
+		else 
+		{
+			target show();
+			target.tcs_is_invisible = false;
+		}
+	}
+	return result;
+}
+
+CMD_SETRANK_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		target = self find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( target ) )
+		{
+			if ( isDefined( arg_list[ 1 ] ) )
+			{
+				if ( self.cmdpower_server > target.cmdpower_server )
+				{
+					switch ( arg_list[ 1 ] )
+					{
+						case "none":
+							new_cmdpower_server = level.CMD_POWER_NONE;
+							new_cmdpower_client = level.CMD_POWER_NONE;
+							new_rank = level.TCS_RANK_NONE;
+							break;
+						case "user":
+							new_cmdpower_server = level.CMD_POWER_USER;
+							new_cmdpower_client = level.CMD_POWER_USER;
+							new_rank = level.TCS_RANK_USER;
+							break;
+						case "trs":
+						case "trusted":
+							new_cmdpower_server = level.CMD_POWER_TRUSTED_USER;
+							new_cmdpower_client = level.CMD_POWER_TRUSTED_USER;
+							new_rank = level.TCS_RANK_TRUSTED_USER;
+							break;
+						case "ele":
+						case "elevated":
+							new_cmdpower_server = level.CMD_POWER_ELEVATED_USER;
+							new_cmdpower_client = level.CMD_POWER_ELEVATED_USER;
+							new_rank = level.TCS_RANK_ELEVATED_USER;
+							break;
+						case "mod":
+						case "moderator":
+							new_cmdpower_server = level.CMD_POWER_MODERATOR;
+							new_cmdpower_client = level.CMD_POWER_MODERATOR;
+							new_rank = level.TCS_RANK_MODERATOR;
+							break;
+						case "cht":
+						case "cheat":
+							new_cmdpower_server = level.CMD_POWER_CHEAT;
+							new_cmdpower_client = level.CMD_POWER_CHEAT;
+							new_rank = level.TCS_RANK_CHEAT;
+							break;
+						case "host":
+						case "owner":
+							new_cmdpower_server = level.CMD_POWER_HOST;
+							new_cmdpower_client = level.CMD_POWER_HOST;
+							new_rank = level.TCS_RANK_HOST;
+							break;
+						default:
+							break;
+					}
+					if ( isDefined( new_rank ) )
+					{
+						result[ "filter" ] = "cmdinfo";
+						result[ "message" ] = "Target's new rank is " + new_rank;
+						target.tcs_rank = new_rank;
+						target.cmdpower_server = new_cmdpower_server;
+						target.cmdpower_client = new_cmdpower_client;
+						add_player_perms_entry( target );
+						level COM_PRINTF( target COM_GET_CMD_FEEDBACK_CHANNEL(), "cmdinfo", "Your new rank is " + new_rank, target );
+					}
+					else 
+					{
+						result[ "filter" ] = "cmderror";
+						result[ "message" ] = "Invalid rank " + arg_list[ 1 ];
+					}
+				}
+				else 
+				{
+					result[ "filter" ] = "cmderror";
+					result[ "message" ] = "Insufficient cmdpower to set " + target.name + "'s rank";
+				}
+			}
+			else 
+			{
+				result[ "filter" ] = "cmderror";
+				result[ "message" ] = "Usage setrank <name|guid|clientnum|self> <rank>";	
+			}
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";	
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "Usage setrank <name|guid|clientnum|self> <rank>";	
+	}
+	return result;
+}
+
+/*
+	Executes a client command on all players in the server. 
+*/
+CMD_EXECONALLPLAYERS_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		cmd_to_execute = get_client_cmd_from_alias( arg_list[ 0 ] );
+		if ( cmd_to_execute != "" )
+		{
+			var_args = [];
+			for ( i = 1; i < arg_list.size; i++ )
+			{
+				var_args[ i - 1 ] = arg_list[ i ];
+			}
+			foreach ( player in level.players )
+			{
+				player thread CMD_EXECUTE( cmd_to_execute, var_args, true, level.tcs_use_silent_commands, true );
+			}
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = "Executed " + cmd_to_execute + " on all players";			
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			if ( isDefined( arg_list[ 0 ] ) )
+			{
+				result[ "message" ] = "Cmd " + arg_list[ 0 ] + " is invalid";
+			}
+			else 
+			{
+				result[ "message" ] = "Cmd is invalid";
+			}
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "execonallplayers <cmdname> [cmdargs]...";
+	}
+	return result;
+}
+
+CMD_EXECONTEAM_f( arg_list )
+{
+	result = [];
+	if ( array_validate( arg_list ) )
+	{
+		team = arg_list[ 0 ];
+		cmd = arg_list[ 1 ];
+		if ( isDefined( level.teams[ team ] ) )
+		{
+			cmd_to_execute = get_client_cmd_from_alias( cmd );
+			if ( cmd_to_execute != "" )
+			{
+				var_args = [];
+				for ( i = 2; i < arg_list.size; i++ )
+				{
+					var_args[ i - 2 ] = arg_list[ i ];
+				}
+				players = getPlayers( team );
+				foreach ( player in players )
+				{
+					player thread CMD_EXECUTE( cmd_to_execute, var_args, true, level.tcs_use_silent_commands, true );
+				}
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = "Executed " + cmd_to_execute + " on team " + team;			
+			}
+			else 
+			{
+				result[ "filter" ] = "cmderror";
+				if ( isDefined( cmd ) )
+				{
+					result[ "message" ] = "Cmd " + cmd + " is invalid";
+				}
+				else 
+				{
+					result[ "message" ] = "Cmd is invalid";
+				}
+			}
+		}
+		else 
+		{
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Team " + team + " is invalid";
+		}
+	}
+	else 
+	{
+		result[ "filter" ] = "cmderror";
+		result[ "message" ] = "execonteam <team> <cmdname> [cmdargs]...";
+	}
+	return result;	
 }
