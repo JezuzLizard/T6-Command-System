@@ -40,7 +40,7 @@ CMD_PLAYERLIST_f( arg_list )
 	players_to_display = [];
 	for ( i = 0; i < players.size; i++ )
 	{
-		message = players[ i ].name + " " + players[ i ] getGUID() + " " + players[ i ] getEntityNumber() + " " + player.tcs_rank; //remember to add rank as a listing option
+		message = players[ i ].name + " " + players[ i ] getGUID() + " " + players[ i ] getEntityNumber() + " " + players[ i ].tcs_rank; //remember to add rank as a listing option
 		players_to_display[ players_to_display.size ] = message;
 		remaining_players--;
 		if ( ( players_to_display.size > level.commands_page_max ) && remaining_players != 0 )

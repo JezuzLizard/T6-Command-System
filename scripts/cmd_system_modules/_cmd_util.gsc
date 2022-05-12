@@ -1,9 +1,7 @@
-#include common_scripts/utility;
-#include maps/mp/_utility;
-#include scripts/cmd_system_modules/_com;
-
-// #define CMD_CONFIG_FILENAME "tcs_config.json"
-// #define CMD_PLAYERLIST_FILENAME "tcs_playerlist.json"
+#include common_scripts\utility;
+#include maps\mp\_utility;
+#include scripts\cmd_system_modules\_com;
+#include scripts\cmd_system_modules\_persistence;
 
 array_validate( array )
 {
@@ -1184,31 +1182,7 @@ tcs_on_connect()
 		{
 			player thread setClientDvarThread( dvar[ "name" ], dvar[ "value" ], index );
 		}
-		if ( player isHost() )
-		{
-			player.cmdpower_server = level.CMD_POWER_HOST;
-			player.cmdpower_client = level.CMD_POWER_HOST;
-			player.tcs_rank = level.TCS_RANK_HOST;
-			level.host = player;
-		}
-		else if ( array_validate( level.tcs_player_entries ) )
-		{
-			foreach ( entry in level.tcs_player_entries )
-			{
-				if ( find_player_in_server( entry.player_entry ) == player )
-				{
-					player.cmdpower_server = entry.cmdpower_server;
-					player.cmdpower_client = entry.cmdpower_client;
-					player.tcs_rank = entry.rank;
-				}
-			}
-		}
-		else 
-		{
-			player.cmdpower_server = getDvarIntDefault( "tcs_cmdpower_server_default", level.CMD_POWER_USER );
-			player.cmdpower_client = getDvarIntDefault( "tcs_cmdpower_client_default", level.CMD_POWER_USER );
-			player.tcs_rank = getDvarStringDefault( "tcs_default_rank", level.TCS_RANK_USER );
-		}
+		player thread PERS_PLAYER_INIT();
 	}
 }
 

@@ -33,6 +33,7 @@ main()
 	//CMD_ADDSERVERCOMMAND( "givepowerup", "givepowerup gpow", "givepowerup <name|guid|clientnum|self> <powerupname>", ::CMD_GIVEPOWERUP_f, level.CMD_POWER_CHEAT );
 	CMD_ADDSERVERCOMMAND( "giveweapon", "giveweapon gwep", "giveweapon <name|guid|clientnum|self> <weapon> ...", ::CMD_GIVEWEAPON_f, level.CMD_POWER_CHEAT );
 	CMD_ADDSERVERCOMMAND( "toggleperssystemforplayer", "toggleperssystemforplayer tpsfp", "toggleperssystemforplayer <name|guid|clientnum|self>", ::CMD_TOGGLEPERSSYSTEMFORPLAYER_f, level.CMD_POWER_CHEAT );
+	CMD_ADDSERVERCOMMAND( "toggleoutofplayableareamonitor", "toggleoutofplayableareamonitor togoopam", "toggleoutofplayableareamonitor", ::CMD_TOGGLEOUTOFPLAYABLEAREAMONITOR_f, level.CMD_POWER_CHEAT );
 
 	CMD_ADDCLIENTCOMMAND( "perk", "perk pk", "perk <perkname> ...", ::CMD_PERK_f, level.CMD_POWER_CHEAT );
 	CMD_ADDCLIENTCOMMAND( "permaperk", "permaperk pp", "permaperk <perkname> ...", ::CMD_PERMAPERK_f, level.CMD_POWER_CHEAT );
@@ -654,5 +655,15 @@ CMD_TOGGLEPERSSYSTEM_f( arg_list )
 	self.tcs_disable_pers_system = !is_true( self.tcs_disable_pers_system );
 	result[ "filter" ] = "cmdinfo";
 	result[ "message" ] = "Toggled your pers system " + on_off;
+	return result;
+}
+
+CMD_TOGGLEOUTOFPLAYABLEAREAMONITOR_f( arg_list )
+{
+	result = [];
+	on_off = cast_bool_to_str( !is_true( level.player_out_of_playable_area_monitor ), "on off" );
+	level.player_out_of_playable_area_monitor = !level.player_out_of_playable_area_monitor;
+	result[ "filter" ] = "cmdinfo";
+	result[ "message" ] = "Out of playable area monitor " + on_off;
 	return result;
 }

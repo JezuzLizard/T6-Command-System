@@ -1,15 +1,16 @@
 
-#include scripts/cmd_system_modules/_cmd_util;
-#include scripts/cmd_system_modules/_com;
-#include scripts/cmd_system_modules/_text_parser;
-#include scripts/cmd_system_modules/_listener;
-#include scripts/cmd_system_modules/_perms;
-#include scripts/cmd_system_modules/global_commands;
-#include scripts/cmd_system_modules/global_threaded_commands;
-#include scripts/cmd_system_modules/_filesystem;
+#include scripts\cmd_system_modules\_cmd_util;
+#include scripts\cmd_system_modules\_com;
+#include scripts\cmd_system_modules\_text_parser;
+#include scripts\cmd_system_modules\_listener;
+#include scripts\cmd_system_modules\_perms;
+#include scripts\cmd_system_modules\global_commands;
+#include scripts\cmd_system_modules\global_threaded_commands;
+#include scripts\cmd_system_modules\_filesystem;
+#include scripts\cmd_system_modules\_persistence;
 
-#include common_scripts/utility;
-#include maps/mp/_utility;
+#include common_scripts\utility;
+#include maps\mp\_utility;
 
 main()
 {
@@ -31,14 +32,14 @@ main()
 	level.CMD_POWER_ELEVATED_USER = 40;
 	level.CMD_POWER_MODERATOR = 60;
 	level.CMD_POWER_CHEAT = 80;
-	level.CMD_POWER_HOST = 100;
+	level.CMD_POWER_OWNER = 100;
 	level.TCS_RANK_NONE = "none";
 	level.TCS_RANK_USER = "user";
 	level.TCS_RANK_TRUSTED_USER = "trusted";
 	level.TCS_RANK_ELEVATED_USER = "elevated";
 	level.TCS_RANK_MODERATOR = "moderator";
 	level.TCS_RANK_CHEAT = "cheat";
-	level.TCS_RANK_HOST = "host";
+	level.TCS_RANK_OWNER = "owner";
 	level.FL_GODMODE = 1;
 	level.FL_DEMI_GODMODE = 2;
 	level.FL_NOTARGET = 4;
@@ -49,9 +50,10 @@ main()
 	{
 		level.custom_commands_tokens = strTok( tokens, " " );
 	}
-	// "/" is always useable by default
+	// "\" is always useable by default
 	CMD_INIT_PERMS();
 	INIT_MOD_INTEGRATIONS();
+	PERSISTENCE_INIT();
 	level.tcs_add_server_command_func = ::CMD_ADDSERVERCOMMAND;
 	level.tcs_add_client_command_func = ::CMD_ADDCLIENTCOMMAND;
 	level.tcs_remove_server_command = ::CMD_REMOVESERVERCOMMAND;
@@ -70,10 +72,10 @@ main()
 	CMD_ADDSERVERCOMMAND( "rotate", "rotate ro", "rotate", ::CMD_ROTATE_f, level.CMD_POWER_ELEVATED_USER, true );
 	CMD_ADDSERVERCOMMAND( "changemap", "changemap cm", "changemap <mapalias>", ::CMD_CHANGEMAP_f, level.CMD_POWER_ELEVATED_USER, true );
 	CMD_ADDSERVERCOMMAND( "setrotation", "setrotation sr", "setrotation <rotationdvar>", ::CMD_SETROTATION_f, level.CMD_POWER_ELEVATED_USER );
-	CMD_ADDSERVERCOMMAND( "mute", "mute m", "mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f, level.CMD_POWER_ELEVATED_USER );
-	CMD_ADDSERVERCOMMAND( "unmute", "unmute um", "unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f, level.CMD_POWER_ELEVATED_USER );
-	CMD_ADDSERVERCOMMAND( "unmuteall", "unmuteall umall", "unmuteall", ::CMD_UNMUTEALL_f, level.CMD_POWER_ADMIN );
-	CMD_ADDSERVERCOMMAND( "muteall", "muteall mall", "muteall", ::CMD_MUTEALL_f, level.CMD_POWER_ADMIN );
+	CMD_ADDSERVERCOMMAND( "mute", "mute m", "mute <name|guid|clientnum> [duration_in_minutes]", ::CMD_MUTE_PLAYER_f, level.CMD_POWER_MODERATOR );
+	CMD_ADDSERVERCOMMAND( "unmute", "unmute um", "unmute <name|guid|clientnum>", ::CMD_UNMUTE_PLAYER_f, level.CMD_POWER_MODERATOR );
+	CMD_ADDSERVERCOMMAND( "unmuteall", "unmuteall umall", "unmuteall", ::CMD_UNMUTEALL_f, level.CMD_POWER_MODERATOR );
+	CMD_ADDSERVERCOMMAND( "muteall", "muteall mall", "muteall", ::CMD_MUTEALL_f, level.CMD_POWER_MODERATOR );
 	CMD_ADDSERVERCOMMAND( "clantag", "clantag ct", "clantag <name|guid|clientnum> <newtag>", ::CMD_RENAME_f, level.CMD_POWER_ADMIN );
 	CMD_ADDSERVERCOMMAND( "givegod", "givegod ggd", "givegod <name|guid|clientnum|self>", ::CMD_GIVEGOD_f, level.CMD_POWER_CHEAT );
 	CMD_ADDSERVERCOMMAND( "givenotarget", "givenotarget gnt", "givenotarget <name|guid|clientnum|self>", ::CMD_GIVENOTARGET_f, level.CMD_POWER_CHEAT );
@@ -81,8 +83,8 @@ main()
 	CMD_ADDSERVERCOMMAND( "givenoclip", "givenoclip gino", "givenoclip <name|guid|clientnum|self>", ::CMD_GIVENOCLIP_f, level.CMD_POWER_CHEAT );
 	CMD_ADDSERVERCOMMAND( "setrank", "setrank sr", "setrank <name|guid|clientnum|self> <rank>", ::CMD_SETRANK_f, level.CMD_POWER_ADMIN );
 
-	CMD_ADDSERVERCOMMAND( "execonallplayers", "execonallplayers execonall exall", "execonallplayers <cmdname> [cmdargs] ...", ::CMD_EXECONALLPLAYERS_f, level.CMD_POWER_HOST );
-	CMD_ADDSERVERCOMMAND( "execonteam", "execonteam execteam exteam", "execonteam <team> <cmdname> [cmdargs] ...", ::CMD_EXECONTEAM_f, level.CMD_POWER_HOST );
+	CMD_ADDSERVERCOMMAND( "execonallplayers", "execonallplayers execonall exall", "execonallplayers <cmdname> [cmdargs] ...", ::CMD_EXECONALLPLAYERS_f, level.CMD_POWER_OWNER );
+	CMD_ADDSERVERCOMMAND( "execonteam", "execonteam execteam exteam", "execonteam <team> <cmdname> [cmdargs] ...", ::CMD_EXECONTEAM_f, level.CMD_POWER_OWNER );
 
 	level.client_commands = [];
 	CMD_ADDCLIENTCOMMAND( "togglehud", "togglehud toghud", "togglehud", ::CMD_TOGGLEHUD_f, level.CMD_POWER_NONE );
@@ -98,6 +100,19 @@ main()
 	CMD_ADDCLIENTCOMMAND( "playerlist", "playerlist plist", "playerlist [pagenumber] [team]", ::CMD_PLAYERLIST_f, level.CMD_POWER_NONE, true );
 	CMD_ADDCLIENTCOMMAND( "showmore", "showmore show", "showmore", ::CMD_SHOWMORE_f, level.CMD_POWER_NONE );
 	CMD_ADDCLIENTCOMMAND( "page", "page pg", "page <pagenumber>", ::CMD_PAGE_f, level.CMD_POWER_NONE );
+
+	PERS_REGISTER_GENERIC_PLAYER_FIELD( "rank", "user" );
+	penalties_array = [];
+	penalties_array[ "perm_banned" ] = false;
+	penalties_array[ "team_changing_banned" ] = false;
+	penalties_array[ "temp_banned" ] = false;
+	penalties_array[ "chat_muted" ] = false;
+ 	PERS_REGISTER_GENERIC_PLAYER_FIELD( "penalties", penalties_array );
+	cmdpower = [];
+	cmdpower[ "cmdpower_server" ] = level.CMD_POWER_USER;
+	cmdpower[ "cmdpower_client" ] = level.CMD_POWER_USER;
+	PERS_REGISTER_GENERIC_PLAYER_FIELD( "perms", cmdpower );
+
 	level thread COMMAND_BUFFER();
 	level thread dvar_command_watcher();
 	level thread end_commands_on_end_game();

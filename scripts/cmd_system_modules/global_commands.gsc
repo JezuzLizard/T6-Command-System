@@ -1,19 +1,13 @@
-#include scripts/cmd_system_modules/_cmd_util;
-#include scripts/cmd_system_modules/_com;
-#include scripts/cmd_system_modules/_listener;
-#include scripts/cmd_system_modules/_penalties;
-#include scripts/cmd_system_modules/_perms;
-#include scripts/cmd_system_modules/_text_parser;
-#include scripts/cmd_system_modules/_filesystem;
+#include scripts\cmd_system_modules\_cmd_util;
+#include scripts\cmd_system_modules\_com;
+#include scripts\cmd_system_modules\_listener;
+#include scripts\cmd_system_modules\_penalties;
+#include scripts\cmd_system_modules\_perms;
+#include scripts\cmd_system_modules\_text_parser;
+#include scripts\cmd_system_modules\_filesystem;
 
-#include common_scripts/utility;
-#include maps/mp/_utility;
-
-// #define FL_GODMODE 0x1
-// #define FL_DEMI_GODMODE 0x2
-// #define FL_NOTARGET 0x4
-
-// #define CFL_NOCLIP 0x1
+#include common_scripts\utility;
+#include maps\mp\_utility;
 
 CMD_RANDOMNEXTMAP_f( arg_list )
 {
@@ -232,7 +226,7 @@ CMD_MUTE_PLAYER_f( arg_list )
 		player = find_player_in_server( arg_list[ 0 ] );
 		if ( isDefined( player ) )
 		{
-			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID();
+			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID() );
 			if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0 )
 			{
 				result[ "filter" ] = "cmdinfo";
@@ -267,7 +261,7 @@ CMD_UNMUTE_PLAYER_f( arg_list )
 		player = find_player_in_server( arg_list[ 0 ] );
 		if ( isDefined( player ) )
 		{
-			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID();
+			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID() );
 			if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0)
 			{
 				remove_player_from_mute_list( player getGUID() );
@@ -338,32 +332,29 @@ CMD_GIVEGOD_f( arg_list )
 	if ( array_validate( arg_list ) )
 	{
 		target = find_player_in_server( arg_list[ 0 ] );
-		if ( !isDefined( target ) )
+		if ( isDefined( target ) )
 		{
-			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "Could not find player";
+			if ( ( target.flags & level.FL_GODMODE ) != 0 )
+			{
+				target.flags &= level.FL_GODMODE;
+			}
+			else 
+			{
+				target.flags |= level.FL_GODMODE;
+			}
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully toggled godmode for %s", target.name );
 		}
 		else 
 		{
-			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "Successfully toggled godmode for %s", target.name );
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
 		result[ "message" ] = "Usage givegod <name|guid|clientnum|self>";
-	}
-	if ( isDefined( target ) )
-	{
-		if ( ( target.flags & level.FL_GODMODE ) != 0 )
-		{
-			target.flags &= level.FL_GODMODE;
-		}
-		else 
-		{
-			target.flags |= level.FL_GODMODE;
-		}
 	}
 	return result;
 }
@@ -374,15 +365,23 @@ CMD_GIVENOTARGET_f( arg_list )
 	if ( array_validate( arg_list ) )
 	{
 		target = find_player_in_server( arg_list[ 0 ] );
-		if ( !isDefined( target ) )
+		if ( isDefined( target ) )
 		{
-			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "Could not find player";
+			if ( ( target.flags & level.FL_NOTARGET ) != 0 )
+			{
+				target.flags &= level.FL_NOTARGET;
+			}
+			else 
+			{
+				target.flags |= level.FL_NOTARGET;
+			}
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully toggled notarget for %s", target.name );
 		}
 		else 
 		{
-			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "Successfully toggled notarget for %s", target.name );
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else 
@@ -392,14 +391,7 @@ CMD_GIVENOTARGET_f( arg_list )
 	}
 	if ( isDefined( target ) )
 	{
-		if ( ( target.flags & level.FL_NOTARGET ) != 0 )
-		{
-			target.flags &= level.FL_NOTARGET;
-		}
-		else 
-		{
-			target.flags |= level.FL_NOTARGET;
-		}
+
 	}
 	return result;
 }
@@ -410,32 +402,29 @@ CMD_GIVENOCLIP_f( arg_list )
 	if ( array_validate( arg_list ) )
 	{
 		target = find_player_in_server( arg_list[ 0 ] );
-		if ( !isDefined( target ) )
+		if ( isDefined( target ) )
 		{
-			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "Could not find player";
+			if ( ( target.flags & level.CFL_NOCLIP ) != 0 )
+			{
+				target.clientflags &= level.CFL_NOCLIP;
+			}
+			else 
+			{
+				target.clientflags |= level.CFL_NOCLIP;
+			}
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully toggled noclip for %s", target.name );
 		}
 		else 
 		{
-			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "Successfully toggled noclip for %s", target.name );
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else 
 	{
 		result[ "filter" ] = "cmderror";
 		result[ "message" ] = "Usage givenoclip <name|guid|clientnum|self>";
-	}
-	if ( isDefined( target ) )
-	{
-		if ( ( target.flags & level.CFL_NOCLIP ) != 0 )
-		{
-			target.clientflags &= level.CFL_NOCLIP;
-		}
-		else 
-		{
-			target.clientflags |= level.CFL_NOCLIP;
-		}
 	}
 	return result;
 }
@@ -481,15 +470,25 @@ CMD_GIVEINVISIBLE_f( arg_list )
 	if ( array_validate( arg_list ) )
 	{
 		target = self find_player_in_server( arg_list[ 0 ] );
-		if ( !isDefined( target ) )
+		if ( isDefined( target ) )
 		{
-			result[ "filter" ] = "cmderror";
-			result[ "message" ] = "Could not find player";
+			if ( !is_true( target.tcs_is_invisible ) )
+			{
+				target hide();
+				target.tcs_is_invisible = true;
+			}
+			else 
+			{
+				target show();
+				target.tcs_is_invisible = false;
+			}
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = "Toggled invisibility for " + target.name;
 		}
 		else 
 		{
-			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = "Toggled invisibility for " + target.name;
+			result[ "filter" ] = "cmderror";
+			result[ "message" ] = "Could not find player";
 		}
 	}
 	else
@@ -499,16 +498,7 @@ CMD_GIVEINVISIBLE_f( arg_list )
 	}
 	if ( isDefined( target ) )
 	{
-		if ( !is_true( target.tcs_is_invisible ) )
-		{
-			target hide();
-			target.tcs_is_invisible = true;
-		}
-		else 
-		{
-			target show();
-			target.tcs_is_invisible = false;
-		}
+
 	}
 	return result;
 }
@@ -561,11 +551,10 @@ CMD_SETRANK_f( arg_list )
 							new_cmdpower_client = level.CMD_POWER_CHEAT;
 							new_rank = level.TCS_RANK_CHEAT;
 							break;
-						case "host":
 						case "owner":
-							new_cmdpower_server = level.CMD_POWER_HOST;
-							new_cmdpower_client = level.CMD_POWER_HOST;
-							new_rank = level.TCS_RANK_HOST;
+							new_cmdpower_server = level.CMD_POWER_OWNER;
+							new_cmdpower_client = level.CMD_POWER_OWNER;
+							new_rank = level.TCS_RANK_OWNER;
 							break;
 						default:
 							break;

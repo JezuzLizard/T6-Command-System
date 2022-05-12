@@ -1,2 +1,5 @@
 /build
+/compiled
 working_commands.txt
+*.exe
+*.bat

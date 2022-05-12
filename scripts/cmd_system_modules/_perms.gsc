@@ -1,7 +1,7 @@
-#include common_scripts/utility;
-#include maps/mp/_utility;
-#include scripts/cmd_system_modules/_cmd_util;
-#include scripts/cmd_system_modules/_com;
+#include common_scripts\utility;
+#include maps\mp\_utility;
+#include scripts\cmd_system_modules\_cmd_util;
+#include scripts\cmd_system_modules\_com;
 
 CMD_INIT_PERMS()
 {
@@ -113,7 +113,7 @@ player_exists_in_perms_system( player )
 
 CMD_COOLDOWN()
 {
-	if ( self == level.host )
+	if ( is_true( self.is_server ) )
 	{
 		return;
 	}
@@ -131,9 +131,9 @@ CMD_COOLDOWN()
 
 can_use_multi_cmds()
 {
-	if ( self == level.host )
+	if ( is_true( self.is_server ) )
 	{
-		return true;
+		return;
 	}
 	if ( self.cmdpower_server >= level.CMD_POWER_CHEAT || self.cmdpower_client >= level.CMD_POWER_CHEAT )
 	{
@@ -144,9 +144,9 @@ can_use_multi_cmds()
 
 has_permission_for_cmd( cmdname, is_clientcmd )
 {
-	if ( self == level.host )
+	if ( is_true( self.is_server ) )
 	{
-		return true;
+		return;
 	}
 	if ( is_clientcmd && ( self.cmdpower_client >= level.client_commands[ cmdname ].power ) )
 	{

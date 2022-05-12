@@ -1,6 +1,6 @@
-#include common_scripts/utility;
-#include maps/mp/_utility;
-#include scripts/cmd_system_modules/_cmd_util;
+#include common_scripts\utility;
+#include maps\mp\_utility;
+#include scripts\cmd_system_modules\_cmd_util;
 
 COM_INIT()
 {
@@ -95,7 +95,7 @@ COM_CAPS_MSG_TITLE( channel, filter, players )
 
 COM_DEBUG_LOGPRINT( channel, message, players, arg_list )
 {
-	writeFile( va( "%s\\%s", level.FS_basepath, channel ), va( "%s\n", message ), true );
+	writeFile( va( "%s//%s", level.FS_basepath, channel ), va( "%s\n", message ), true );
 }
 
 COM_PRINT( channel, message, players, arg_list )

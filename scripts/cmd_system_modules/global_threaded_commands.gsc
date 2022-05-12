@@ -1,11 +1,11 @@
-#include scripts/cmd_system_modules/_cmd_util;
-#include scripts/cmd_system_modules/_com;
-#include scripts/cmd_system_modules/_listener;
-#include scripts/cmd_system_modules/_perms;
-#include scripts/cmd_system_modules/_text_parser;
+#include scripts\cmd_system_modules\_cmd_util;
+#include scripts\cmd_system_modules\_com;
+#include scripts\cmd_system_modules\_listener;
+#include scripts\cmd_system_modules\_perms;
+#include scripts\cmd_system_modules\_text_parser;
 
-#include common_scripts/utility;
-#include maps/mp/_utility;
+#include common_scripts\utility;
+#include maps\mp\_utility;
 
 CMD_CHANGEMAP_f( arg_list )
 {
@@ -14,6 +14,7 @@ CMD_CHANGEMAP_f( arg_list )
 	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	if ( array_validate( arg_list ) )
 	{
+		alias = arg_list[ 0 ];
 		rotation_data = find_map_data_from_alias( alias );
 		if ( rotation_data[ "mapname" ] != "" )
 		{
