@@ -1,0 +1,59 @@
+toggleperssystem
+weapon <weaponname> ...
+powerup <powerupname>
+points <amount>
+permaperk <perkname> ...
+perk <perkname> ...
+page <pagenumber>
+showmore
+playerlist [pagenumber] [team]
+cmdlist [pagenumber]
+cvar <cvarname> <newval>
+teleport <name|guid|clientnum|origin>
+bottomlessclip
+printangles
+printorigin
+invisible
+notarget
+god
+togglehud
+toggleoutofplayableareamonitor
+toggleperssystemforplayer <name|guid|clientnum|self>
+giveweapon <name|guid|clientnum|self> <weapon> ...
+givepowerup <name|guid|clientnum|self> <powerupname>
+givepoints <name|guid|clientnum|self> <amount>
+givepermaperk <name|guid|clientnum|self> <perkname> ...
+giveperk <name|guid|clientnum|self> <perkname> ...
+unpause
+pause [minutes]
+respawnspectators
+killactors
+togglerespawn <name|guid|clientnum|self>
+spectator <name|guid|clientnum|self>
+toggleteamchanging
+clantag <name|guid|clientnum> <newtag>
+togglechat
+unmute <name|guid|clientnum>
+mute <name|guid|clientnum> [duration_in_minutes]
+setrank <name|guid|clientnum|self> <rank>
+tempban <name|guid|clientnum> <duration_in_minutes> [reason]
+ban <name|guid|clientnum> [reason]
+execonteam <team> <cmdname> [cmdargs] ...
+execonallplayers <cmdname> [cmdargs] ...
+givenoclip <name|guid|clientnum|self>
+giveinvisible <name|guid|clientnum|self>
+givenotarget <name|guid|clientnum|self>
+givegod <name|guid|clientnum|self>
+setrotation <rotationdvar>
+changemap <mapalias>
+rotate
+restart
+randomnextmap
+resetrotation
+nextmap <mapalias>
+cvarall <cvarname> <newval>
+dvar <dvarname> <newval>
+unlock
+lock <password>
+kick <name|guid|clientnum>
+setcvar <name|guid|clientnum|self> <cvarname> <newval>
