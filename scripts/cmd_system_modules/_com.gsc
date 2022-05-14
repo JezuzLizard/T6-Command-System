@@ -16,6 +16,7 @@ COM_INIT()
 	COM_ADDFILTER( "permsinfo", 1 );
 	COM_ADDFILTER( "permswarning", 1 );
 	COM_ADDFILTER( "permserror", 1 ); 
+	COM_ADDFILTER( "permsdebug", 0 );
 	COM_ADDFILTER( "debug", 0 );
 	COM_ADDFILTER( "obituary", 1 );
 	COM_ADDFILTER( "notitle", 1 );
@@ -66,11 +67,11 @@ COM_IS_CHANNEL_ACTIVE( channel )
 
 COM_CAPS_MSG_TITLE( channel, filter, players )
 {
-	if ( filter == "notitle" || channel == "con" )
+	if ( filter == "notitle" )
 	{
 		return "";
 	}
-	if ( channel == "g_log" )
+	if ( channel == "con" || channel == "g_log" )
 	{
 		return toUpper( filter ) + ":";
 	}
@@ -204,7 +205,7 @@ COM_PRINTF( channels, filter, message, players, arg_list )
 	{
 		if ( COM_IS_CHANNEL_ACTIVE( channel ) && COM_IS_FILTER_ACTIVE( filter ) )
 		{
-			if ( channel == "g_log" )
+			if ( channel == "con" || channel == "g_log" )
 			{
 				message_color_code = "";
 			}

@@ -7,7 +7,6 @@ command_listener_wait_for_user_input()
 {
 	self endon( "new_command_listener" );
 	self waittill( "listener", args );
-	result = [];
 	var_args = strTok( args, " " );
 	return var_args;
 }

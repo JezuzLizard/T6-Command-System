@@ -1,10 +1,10 @@
 #include scripts\cmd_system_modules\_cmd_util;
 #include scripts\cmd_system_modules\_com;
 #include scripts\cmd_system_modules\_listener;
-#include scripts\cmd_system_modules\_penalties;
 #include scripts\cmd_system_modules\_perms;
 #include scripts\cmd_system_modules\_text_parser;
 #include scripts\cmd_system_modules\_filesystem;
+#include scripts\cmd_system_modules\_persistence;
 
 #include common_scripts\utility;
 #include maps\mp\_utility;
@@ -136,17 +136,36 @@ CMD_SERVER_DVAR_f( arg_list )
 	return result;
 }
 
-CMD_ADMIN_KICK_f( arg_list )
+CMD_KICK_f( arg_list )
 {
 	result = [];
 	if ( array_validate( arg_list ) )
 	{
-		player = find_player_in_server( arg_list[ 0 ] );
-		if ( isDefined( player ) )
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( target ) )
 		{
-			kick( player getEntityNumber() );
-			result[ "filter" ] = "cmdinfo";
-			result[ "message" ] = va( "Successfully kicked %s", player.name );
+			if ( is_true( self.is_server ) || ( self.player_fields[ "perms" ][ "cmdpower_server" ] > target.player_fields[ "perms" ][ "cmdpower_server" ] ) )
+			{
+				if ( isDefined( arg_list[ 1 ] ) )
+				{
+					reason_args = arg_list;
+					arrayRemoveIndex( reason_args, 0 );
+					reason = repackage_args( reason_args );
+					reason = "Kicked for " + reason;
+					executecommand( va( "clientkick_for_reason %s \"%s\"", target getEntityNumber(), reason ) );
+				}
+				else 
+				{
+					kick( target getEntityNumber() );
+				}
+				result[ "filter" ] = "cmdinfo";
+				result[ "message" ] = va( "Successfully kicked %s", target.name );
+			}
+			else 
+			{
+				result[ "filter" ] = "cmderror";
+				result[ "message" ] = "Insufficient cmdpower to kick " + target.name + "'s";
+			}
 		}
 		else 
 		{
@@ -223,20 +242,32 @@ CMD_MUTE_PLAYER_f( arg_list )
 	{
 		player_object = arg_list[ 0 ];
 		duration = arg_list[ 1 ];
-		player = find_player_in_server( arg_list[ 0 ] );
-		if ( isDefined( player ) )
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( target ) )
 		{
-			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID() );
-			if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0 )
+			if ( is_true( self.is_server ) || ( self.player_fields[ "perms" ][ "cmdpower_server" ] > target.player_fields[ "perms" ][ "cmdpower_server" ] ) )
 			{
-				result[ "filter" ] = "cmdinfo";
-				result[ "message" ] = va( "%s is already muted %s time left", player.name, cur_mute_duration );
+				if ( isDefined( duration ) )
+				{
+					target.player_fields[ "penalties" ][ "chat_muted" ] = true;
+					target.player_fields[ "penalties" ][ "chat_muted_time" ] = getUTC();
+					target.player_fields[ "penalties" ][ "perm_chat_length" ] = int( duration ) * 60;
+					result[ "filter" ] = "cmdinfo";
+					result[ "message" ] = va( "Successfully muted %s for %s minutes", target.name, duration );
+					target unmute_player_thread();
+				}
+				else 
+				{
+					target.player_fields[ "penalties" ][ "perm_chat_muted" ] = true;
+					result[ "filter" ] = "cmdinfo";
+					result[ "message" ] = va( "Successfully muted %s permanently", target.name );
+				}
+				target thread ADD_PERS_FS_FUNC_TO_QUEUE( "update" );
 			}
-			else
+			else 
 			{
-				add_player_to_mute_list( player getGUID(), duration );
-				result[ "filter" ] = "cmdinfo";
-				result[ "message" ] = va( "Successfully muted %s for %s minutes", player.name, duration );
+				result[ "filter" ] = "cmderror";
+				result[ "message" ] = "Insufficient cmdpower to mute " + target.name;
 			}
 		}
 		else 
@@ -258,21 +289,16 @@ CMD_UNMUTE_PLAYER_f( arg_list )
 	result = [];
 	if ( array_validate( arg_list ) )
 	{
-		player = find_player_in_server( arg_list[ 0 ] );
-		if ( isDefined( player ) )
+		target = find_player_in_server( arg_list[ 0 ] );
+		if ( isDefined( target ) )
 		{
-			cur_mute_duration = get_player_mute_duration_from_mute_list( player getGUID() );
-			if ( isDefined( cur_mute_duration ) && cur_mute_duration > 0)
-			{
-				remove_player_from_mute_list( player getGUID() );
-				result[ "filter" ] = "cmdinfo";
-				result[ "message" ] = va( "Successfully unmuted %s", player.name );
-			}
-			else 
-			{
-				result[ "filter" ] = "cmderror";
-				result[ "message" ] = va( "%s is not muted", player.name );
-			}
+			target.player_fields[ "penalties" ][ "perm_chat_muted" ] = false;
+			target.player_fields[ "penalties" ][ "chat_muted" ] = false;
+			target.player_fields[ "penalties" ][ "chat_muted_time" ] = 0;
+			target.player_fields[ "penalties" ][ "perm_chat_length" ] = 0;
+			target thread ADD_PERS_FS_FUNC_TO_QUEUE( "update" );
+			result[ "filter" ] = "cmdinfo";
+			result[ "message" ] = va( "Successfully unmuted %s", target.name );
 		}
 		else 
 		{
@@ -288,15 +314,30 @@ CMD_UNMUTE_PLAYER_f( arg_list )
 	return result;	
 }
 
-CMD_MUTEALL_f( arg_list )
+CMD_TOGGLECHAT_f( arg_list )
 {
 	result = [];
+	level.tcs_chat_disabled = !is_true( level.tcs_chat_disabled );
+	on_off = cast_bool_to_str( level.tcs_chat_disabled, "off on" );
+	result[ "filter" ] = "cmdinfo";
+	result[ "message" ] = va( "Chat is toggled %s", on_off );	
 	return result;
 }
 
-CMD_UNMUTEALL_f( arg_list )
+CMD_TOGGLETEAMCHANGING_f( arg_list )
 {
 	result = [];
+	on_off = ( level.allow_teamchange == "0" ? "on" : "off" );
+	if ( on_off == "on" )
+	{
+		level.allow_teamchange = "1";
+	}
+	else 
+	{
+		level.allow_teamchange = "0";
+	}
+	result[ "filter" ] = "cmdinfo";
+	result[ "message" ] = va( "Team changning is toggled %s", on_off );	
 	return result;
 }
 
@@ -445,7 +486,7 @@ CMD_CLANTAG_f( arg_list )
 			}
 			else 
 			{
-				target setClanTag( "" );
+				target resetClanTag();
 				result[ "filter" ] = "cmdinfo";
 				result[ "message" ] = va( "Successfully reset %s's clantag", target.name );
 			}
@@ -513,7 +554,7 @@ CMD_SETRANK_f( arg_list )
 		{
 			if ( isDefined( arg_list[ 1 ] ) )
 			{
-				if ( self.cmdpower_server > target.cmdpower_server )
+				if ( is_true( self.is_server ) || ( self.player_fields[ "perms" ][ "cmdpower_server" ] > target.player_fields[ "perms" ][ "cmdpower_server" ] ) )
 				{
 					switch ( arg_list[ 1 ] )
 					{
@@ -547,9 +588,10 @@ CMD_SETRANK_f( arg_list )
 							break;
 						case "cht":
 						case "cheat":
-							new_cmdpower_server = level.CMD_POWER_CHEAT;
-							new_cmdpower_client = level.CMD_POWER_CHEAT;
-							new_rank = level.TCS_RANK_CHEAT;
+						case "admin":
+							new_cmdpower_server = level.CMD_POWER_ADMIN;
+							new_cmdpower_client = level.CMD_POWER_ADMIN;
+							new_rank = level.TCS_RANK_ADMIN;
 							break;
 						case "owner":
 							new_cmdpower_server = level.CMD_POWER_OWNER;
@@ -563,10 +605,18 @@ CMD_SETRANK_f( arg_list )
 					{
 						result[ "filter" ] = "cmdinfo";
 						result[ "message" ] = "Target's new rank is " + new_rank;
-						target.tcs_rank = new_rank;
-						target.cmdpower_server = new_cmdpower_server;
-						target.cmdpower_client = new_cmdpower_client;
-						add_player_perms_entry( target );
+						target.player_fields[ "rank" ] = new_rank;
+						target.player_fields[ "perms" ][ "cmdpower_server" ] = new_cmdpower_server;
+						target.player_fields[ "perms" ][ "cmdpower_client" ] = new_cmdpower_client;
+						target thread ADD_PERS_FS_FUNC_TO_QUEUE( "update" );
+						foreach ( rank in level.tcs_clantag_worthy_ranks )
+						{
+							if ( new_rank == rank )
+							{
+								target setClantag( rank );
+								break;
+							}
+						}
 						level COM_PRINTF( target COM_GET_CMD_FEEDBACK_CHANNEL(), "cmdinfo", "Your new rank is " + new_rank, target );
 					}
 					else 

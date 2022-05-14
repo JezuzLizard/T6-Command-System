@@ -722,7 +722,7 @@ find_player_in_server( clientnum_guid_or_name )
 	}
 	else 
 	{
-		name = clientnum_guid_or_name;
+		name = simplify_player_name_for_code( clientnum_guid_or_name );
 		enum = 2;
 	}
 	player_data = [];
@@ -749,7 +749,7 @@ find_player_in_server( clientnum_guid_or_name )
 		case 2:
 			foreach ( player in level.players )
 			{
-				if ( clean_player_name_of_clantag( toLower( player.name ) ) == clean_player_name_of_clantag( name ) || isSubStr( toLower( player.name ), name ) )
+				if ( simplify_player_name_for_code( player.name ) == name || isSubStr( simplify_player_name_for_code( player.name ), name ) )
 				{
 					return player;
 				}
@@ -757,6 +757,11 @@ find_player_in_server( clientnum_guid_or_name )
 			break;
 	}
 	return undefined;
+}
+
+simplify_player_name_for_code( name )
+{
+	return clean_player_name_of_clantag( toLower( name ) );
 }
 
 getDvarStringDefault( dvarname, default_value )
@@ -1014,8 +1019,13 @@ is_odd( int )
 repackage_args( arg_list )
 {
 	args_string = "";
-	foreach ( arg in arg_list )
+	foreach ( index, arg in arg_list )
 	{
+		if ( index == ( arg_list.size - 1 ) )
+		{
+			args_string = args_string + arg;
+			break;
+		}
 		args_string = args_string + arg + " ";
 	}
 	return args_string;
@@ -1182,7 +1192,6 @@ tcs_on_connect()
 		{
 			player thread setClientDvarThread( dvar[ "name" ], dvar[ "value" ], index );
 		}
-		player thread PERS_PLAYER_INIT();
 	}
 }
 
@@ -1191,4 +1200,36 @@ setClientDvarThread( dvar, value, index )
 {
 	wait( index * 0.25 );
 	self setClientDvar( dvar, value );
+}
+
+check_for_command_alias_collisions()
+{
+	server_command_keys = getArrayKeys( level.server_commands );
+	client_command_keys = getArrayKeys( level.client_commands );
+	aliases = [];
+	for ( i = 0; i < client_command_keys.size; i++ )
+	{
+		for ( j = 0; j < level.client_commands[ client_command_keys[ i ] ].aliases.size; j++ )
+		{
+			aliases[ aliases.size ] = level.client_commands[ client_command_keys[ i ] ].aliases[ j ];
+		}
+	}
+	for ( i = 0; i < server_command_keys.size; i++ )
+	{
+		for ( j = 0; j < level.server_commands[ server_command_keys[ i ] ].aliases.size; j++ )
+		{
+			aliases[ aliases.size ] = level.server_commands[ server_command_keys[ i ] ].aliases[ j ];
+		}
+	}
+	for ( i = 0; i < aliases.size; i++ )
+	{
+		for ( j = i + 1; j < aliases.size; j++ )
+		{
+			if ( aliases[ i ] == aliases[ j ] )
+			{
+				level COM_PRINTF( "con", "cmderror", va( "Command alias collision detected alias %s is duplicated", aliases[ i ] ), level );
+				break;
+			}
+		}
+	}
 }
