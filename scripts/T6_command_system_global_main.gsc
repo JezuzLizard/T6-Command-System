@@ -66,6 +66,7 @@ main()
 	level.tcs_com_printf = ::COM_PRINTF;
 	level.tcs_com_get_feedback_channel = ::COM_GET_CMD_FEEDBACK_CHANNEL;
 	level.tcs_find_player_in_server = ::find_player_in_server;
+	level.tcs_check_cmd_collisions = ::check_for_command_alias_collisions;
 	level.server_commands = [];
 	CMD_ADDSERVERCOMMAND( "setcvar", "setcvar scv", "setcvar <name|guid|clientnum|self> <cvarname> <newval>", ::CMD_SETCVAR_f, level.CMD_POWER_ADMIN );
 	CMD_ADDSERVERCOMMAND( "kick", "kick k", "kick <name|guid|clientnum>", ::CMD_KICK_f, level.CMD_POWER_MODERATOR );
@@ -110,8 +111,8 @@ main()
 	CMD_ADDCLIENTCOMMAND( "cvar", "cvar cv", "cvar <cvarname> <newval>", ::CMD_CVAR_f, level.CMD_POWER_ADMIN );
 	CMD_ADDCLIENTCOMMAND( "cmdlist", "cmdlist cl", "cmdlist [pagenumber]", ::CMD_CMDLIST_f, level.CMD_POWER_NONE, true );
 	CMD_ADDCLIENTCOMMAND( "playerlist", "playerlist plist", "playerlist [pagenumber] [team]", ::CMD_PLAYERLIST_f, level.CMD_POWER_NONE, true );
-	CMD_ADDCLIENTCOMMAND( "showmore", "showmore show", "showmore", ::CMD_SHOWMORE_f, level.CMD_POWER_NONE );
-	CMD_ADDCLIENTCOMMAND( "page", "page pg", "page <pagenumber>", ::CMD_PAGE_f, level.CMD_POWER_NONE );
+	// CMD_ADDCLIENTCOMMAND( "showmore", "showmore show", "showmore", ::CMD_SHOWMORE_f, level.CMD_POWER_NONE );
+	// CMD_ADDCLIENTCOMMAND( "page", "page pg", "page <pagenumber>", ::CMD_PAGE_f, level.CMD_POWER_NONE );
 	check_for_command_alias_collisions();
 	level.tcs_pers_version = 1.0;
 	PERS_REGISTER_GENERIC_PLAYER_FIELD( "version", level.tcs_pers_version );
