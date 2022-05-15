@@ -27,8 +27,6 @@ PERSISTENCE_INIT()
 	REGISTER_PERS_FS_FUNC( "load", ::PERS_LOAD_EXISTING_PLAYER_ENTRY );
 	REGISTER_PERS_FS_FUNC( "delete", ::PERS_DELETE_PLAYER_ENTRY );
 	REGISTER_PERS_FS_FUNC( "update", ::PERS_UPDATE_PLAYER_ENTRY );
-	//REGISTER_PERS_FS_FUNC( "get", ::PERS_GET_PLAYER_ENTRY_FIELD_VALUE );
-	//REGISTER_PERS_FS_FUNC( "set", ::PERS_SET_PLAYER_ENTRY_FIELD_VALUE );
 	level thread PERS_CONNECTING_THREAD();
 }
 
@@ -37,6 +35,7 @@ PERS_CONNECTING_THREAD()
 	while ( true )
 	{
 		level waittill( "connecting", player );
+		level COM_PRINTF( "con|g_log", "permsdebug", va( "%s is connecting at %s server time", player.name, getTime() ), level );
 		player remove_square_brackets_from_name();
 		player thread filespump();
 		player thread PERS_PLAYER_INIT();
@@ -82,7 +81,13 @@ set_clantag()
 	{
 		if ( self.player_fields[ "rank" ] == rank )
 		{
-			self setClantag( rank );
+			new_string = "";
+			new_string += toUpper( rank[ 0 ] );
+			for ( i = 1; i < rank.size; i++ )
+			{
+				new_string += rank[ i ];
+			}
+			self setClantag( new_string );
 			break;
 		}
 	}
@@ -111,6 +116,10 @@ check_banned()
 			{
 				ban_reason = level.tcs_default_ban_reason;
 			}
+			else 
+			{
+				ban_reason = "Tempbanned for " + ban_reason;
+			}
 			executecommand( va( "clientkick_for_reason %s \"%s\"", self getEntityNumber(), ban_reason ) );
 		}
 	}
@@ -120,6 +129,10 @@ check_banned()
 		if ( ban_reason == "none" )
 		{
 			ban_reason = level.tcs_default_ban_reason;
+		}
+		else 
+		{
+			ban_reason = "Permbanned for " + ban_reason;
 		}
 		executecommand( va( "clientkick_for_reason %s \"%s\"", self getEntityNumber(), ban_reason ) );
 	}
@@ -150,7 +163,7 @@ check_muted()
 unmute_player_thread()
 {
 	self endon( "disconnect" );
-	while ( ( self.player_fields[ "penalties" ][ "chat_muted_time" ] + self.player_fields[ "penalties" ][ "chat_muted_length" ] ) < getUTC() )
+	while ( ( self.player_fields[ "penalties" ][ "chat_muted_time" ] + self.player_fields[ "penalties" ][ "chat_muted_length" ] ) > getUTC() )
 	{
 		wait 1;
 	}
@@ -193,7 +206,7 @@ ADD_PERS_FS_FUNC_TO_QUEUE( func_alias )
 		self.pers_fs_id++;
 	}
 	id = self.pers_fs_id;
-	path = va( "%s/%s_%s.json", level.script_data_player_entries, simplify_player_name_for_code( self.name ), self getGUID() );
+	path = va( "%s/%s.json", level.script_data_player_entries, self getGUID() );
 	struct = spawnStruct();
 	struct.func = level.persistence_funcs[ func_alias ];
 	struct.path = path;
@@ -252,7 +265,11 @@ PERS_REGISTER_GENERIC_PLAYER_FIELD( fieldname, defaultvalue )
 	{
 		level.pers_generic_player_fields_registry = [];
 	}
+	level.tcs_pers_version += 0.1;
+	round = ceil( level.tcs_pers_version * 1000 );
+	level.tcs_pers_version = round / 1000;
 	level.pers_generic_player_fields_registry[ fieldname ] = defaultvalue;
+	level.pers_generic_player_fields_registry[ "version" ] = level.tcs_pers_version;
 }
 
 PERS_UNREGISTER_GENERIC_PLAYER_FIELD( fieldname )
@@ -261,14 +278,62 @@ PERS_UNREGISTER_GENERIC_PLAYER_FIELD( fieldname )
 	{
 		return;
 	}
+	level.tcs_pers_version += 0.1;
+	round = ceil( level.tcs_pers_version * 1000 );
+	level.tcs_pers_version = round / 1000;
 	level.pers_generic_player_fields_registry[ fieldname ] = undefined;
+	level.pers_generic_player_fields_registry[ "version" ] = level.tcs_pers_version;
+}
+
+check_for_newer_version( path )
+{
+	if ( !fileExists( path ) )
+	{
+		return false;
+	}
+	buffer = readfile( path );
+	json_array = jsonparse( buffer );
+	if ( json_array[ "version" ] < level.tcs_pers_version )
+	{
+		new_fields = [];
+		player_fields_keys = getArrayKeys( self.player_fields );
+		for ( i = 0; i < player_fields_keys.size; i++  )
+		{
+			found_key = false;
+			json_array_keys = getArrayKeys( json_array );
+			for ( j = 0; j < json_array_keys.size; j++ )
+			{
+				if ( player_fields_keys[ i ] == json_array_keys[ j ] )
+				{
+					found_key = true;
+					break;
+				}
+			}
+			if ( !found_key )
+			{
+				new_fields[ player_fields_keys[ i ] ] = self.player_fields[ player_fields_keys[ i ] ];
+			}
+		}
+		if ( new_fields.size > 0 )
+		{
+			combined_array = arrayCombine( json_array, new_fields, false, true );
+			json = jsonserialize( combined_array, 4 );
+			writefile( path, json );
+			return true;
+		}
+	}
+	return false;
 }
 
 PERS_CREATE_NEW_PLAYER_ENTRY( path, id )
 {
 	self endon( "disconnect" );
 	self endon( va( "pers_fs_timeout_%s", id ) );
-	if ( !fileexists( path ) )
+	if ( self check_for_newer_version( path ) )
+	{
+		success = "success";
+	}
+	else if ( !fileexists( path ) )
 	{
 		json = jsonserialize( self.player_fields, 4 );
 		writefile( path, json );

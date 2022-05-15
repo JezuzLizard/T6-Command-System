@@ -43,6 +43,7 @@ main()
 	CMD_ADDCLIENTCOMMAND( "toggleperssystem", "toggleperssystem tps", "toggleperssystem", ::CMD_TOGGLEPERSSYSTEM_f, level.CMD_POWER_ADMIN );
 	check_for_command_alias_collisions();
 	level.zm_command_init_done = true;
+	level COM_PRINTF( "con|g_log", "permsdebug", va( "level.zm_command_init_done is initialized at %s server time", getTime() ), level );
 }
 
 CMD_GIVEPOWERUP_f( arg_list )

@@ -151,7 +151,7 @@ CMD_TEMPBAN_f( arg_list )
 			{
 				if ( isDefined( arg_list[ 1 ] ) )
 				{
-					if ( str_is_int( arg_list[ 1 ] ) )
+					if ( is_str_int( arg_list[ 1 ] ) )
 					{
 						target.player_fields[ "penalties" ][ "temp_ban_length" ] = int( arg_list[ 1 ] ) * 60;
 						target.player_fields[ "penalties" ][ "temp_banned" ] = true;

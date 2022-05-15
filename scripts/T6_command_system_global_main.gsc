@@ -63,6 +63,8 @@ main()
 	level.tcs_remove_server_command = ::CMD_REMOVESERVERCOMMAND;
 	level.tcs_remove_client_command = ::CMD_REMOVECLIENTCOMMAND;
 	level.tcs_register_generic_player_field = ::PERS_REGISTER_GENERIC_PLAYER_FIELD;
+	level.tcs_com_printf = ::COM_PRINTF;
+	level.tcs_find_player_in_server = ::find_player_in_server;
 	level.server_commands = [];
 	CMD_ADDSERVERCOMMAND( "setcvar", "setcvar scv", "setcvar <name|guid|clientnum|self> <cvarname> <newval>", ::CMD_SETCVAR_f, level.CMD_POWER_ADMIN );
 	CMD_ADDSERVERCOMMAND( "kick", "kick k", "kick <name|guid|clientnum>", ::CMD_KICK_f, level.CMD_POWER_MODERATOR );
@@ -110,6 +112,8 @@ main()
 	CMD_ADDCLIENTCOMMAND( "showmore", "showmore show", "showmore", ::CMD_SHOWMORE_f, level.CMD_POWER_NONE );
 	CMD_ADDCLIENTCOMMAND( "page", "page pg", "page <pagenumber>", ::CMD_PAGE_f, level.CMD_POWER_NONE );
 	check_for_command_alias_collisions();
+	level.tcs_pers_version = 1.0;
+	PERS_REGISTER_GENERIC_PLAYER_FIELD( "version", level.tcs_pers_version );
 	PERS_REGISTER_GENERIC_PLAYER_FIELD( "rank", "user" );
 	penalties_array = [];
 	penalties_array[ "perm_banned" ] = false;
@@ -126,12 +130,14 @@ main()
 	cmdpower[ "cmdpower_server" ] = level.CMD_POWER_USER;
 	cmdpower[ "cmdpower_client" ] = level.CMD_POWER_USER;
 	PERS_REGISTER_GENERIC_PLAYER_FIELD( "perms", cmdpower );
+	
 	level thread COMMAND_BUFFER();
 	level thread scr_dvar_command_watcher();
 	level thread end_commands_on_end_game();
 	level thread tcs_on_connect();
 	onPlayerSay( ::check_mute );
 	level.command_init_done = true;
+	level COM_PRINTF( "con|g_log", "permsdebug", va( "level.command_init_done is initialized at %s server time", getTime() ), level );
 }
 
 check_mute( text, mode )
