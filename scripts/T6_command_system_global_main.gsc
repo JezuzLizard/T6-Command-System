@@ -64,6 +64,7 @@ main()
 	level.tcs_remove_client_command = ::CMD_REMOVECLIENTCOMMAND;
 	level.tcs_register_generic_player_field = ::PERS_REGISTER_GENERIC_PLAYER_FIELD;
 	level.tcs_com_printf = ::COM_PRINTF;
+	level.tcs_com_get_feedback_channel = ::COM_GET_CMD_FEEDBACK_CHANNEL;
 	level.tcs_find_player_in_server = ::find_player_in_server;
 	level.server_commands = [];
 	CMD_ADDSERVERCOMMAND( "setcvar", "setcvar scv", "setcvar <name|guid|clientnum|self> <cvarname> <newval>", ::CMD_SETCVAR_f, level.CMD_POWER_ADMIN );
@@ -130,7 +131,6 @@ main()
 	cmdpower[ "cmdpower_server" ] = level.CMD_POWER_USER;
 	cmdpower[ "cmdpower_client" ] = level.CMD_POWER_USER;
 	PERS_REGISTER_GENERIC_PLAYER_FIELD( "perms", cmdpower );
-	
 	level thread COMMAND_BUFFER();
 	level thread scr_dvar_command_watcher();
 	level thread end_commands_on_end_game();

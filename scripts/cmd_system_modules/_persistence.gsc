@@ -206,7 +206,14 @@ ADD_PERS_FS_FUNC_TO_QUEUE( func_alias )
 		self.pers_fs_id++;
 	}
 	id = self.pers_fs_id;
-	path = va( "%s/%s.json", level.script_data_player_entries, self getGUID() );
+	if ( self isTestClient() )
+	{
+		path = va( "%s/%s_%s.json", level.script_data_player_entries, self.name, self getGUID() );
+	}
+	else 
+	{
+		path = va( "%s/%s.json", level.script_data_player_entries, self getGUID() );
+	}
 	struct = spawnStruct();
 	struct.func = level.persistence_funcs[ func_alias ];
 	struct.path = path;

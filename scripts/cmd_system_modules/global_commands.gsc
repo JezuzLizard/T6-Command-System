@@ -603,21 +603,14 @@ CMD_SETRANK_f( arg_list )
 					}
 					if ( isDefined( new_rank ) )
 					{
-						result[ "filter" ] = "cmdinfo";
-						result[ "message" ] = "Target's new rank is " + new_rank;
 						target.player_fields[ "rank" ] = new_rank;
 						target.player_fields[ "perms" ][ "cmdpower_server" ] = new_cmdpower_server;
 						target.player_fields[ "perms" ][ "cmdpower_client" ] = new_cmdpower_client;
 						target thread ADD_PERS_FS_FUNC_TO_QUEUE( "update" );
-						foreach ( rank in level.tcs_clantag_worthy_ranks )
-						{
-							if ( new_rank == rank )
-							{
-								target setClantag( rank );
-								break;
-							}
-						}
+						target set_clantag();
 						level COM_PRINTF( target COM_GET_CMD_FEEDBACK_CHANNEL(), "cmdinfo", "Your new rank is " + new_rank, target );
+						result[ "filter" ] = "cmdinfo";
+						result[ "message" ] = "Target's new rank is " + new_rank;						
 					}
 					else 
 					{

@@ -48,7 +48,6 @@ CMD_PLAYERLIST_f( arg_list )
 
 CMD_CMDLIST_f( arg_list )
 {
-	cmds_to_display = [];
 	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	if ( channel != "con" )
 	{
