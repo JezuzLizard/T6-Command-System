@@ -37,7 +37,7 @@ CMD_PLAYERLIST_f( arg_list )
 	}
 	for ( i = 0; i < players.size; i++ )
 	{
-		message = va( "%s %s %s", players[ i ].name, players[ i ] getGUID(), players[ i ] getEntityNumber() );
+		message = va( "^3%s %s %s", players[ i ].name, players[ i ] getGUID(), players[ i ] getEntityNumber() );
 		level COM_PRINTF( channel, "notitle", message, self );
 	}
 	if ( !is_true( self.is_server ) )
@@ -59,7 +59,7 @@ CMD_CMDLIST_f( arg_list )
 	{
 		if ( self has_permission_for_cmd( cmdnames[ i ] ) )
 		{
-			message = all_commands[ cmdnames[ i ] ].usage;
+			message = "^3" + all_commands[ cmdnames[ i ] ].usage;
 			level COM_PRINTF( channel, "notitle", message, self );
 		}
 	}
