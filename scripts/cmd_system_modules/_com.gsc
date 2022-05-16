@@ -205,16 +205,8 @@ COM_PRINTF( channels, filter, message, players, arg_list )
 	{
 		if ( COM_IS_CHANNEL_ACTIVE( channel ) && COM_IS_FILTER_ACTIVE( filter ) )
 		{
-			if ( channel == "con" || channel == "g_log" )
-			{
-				message_color_code = "";
-			}
-			else 
-			{
-				message_color_code = "^8";
-			}
-			message = va( "%s%s%s", COM_CAPS_MSG_TITLE( channel, filter, players ), message_color_code, message );
-			[[ level.com_channels[ channel ] ]]( channel, message, players, arg_list );
+			message_final = va( "%s%s", COM_CAPS_MSG_TITLE( channel, filter, players ), message );
+			[[ level.com_channels[ channel ] ]]( channel, message_final, players, arg_list );
 		}
 	}
 }

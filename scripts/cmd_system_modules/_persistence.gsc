@@ -273,7 +273,14 @@ PERS_REGISTER_GENERIC_PLAYER_FIELD( fieldname, defaultvalue )
 		level.pers_generic_player_fields_registry = [];
 	}
 	level.tcs_pers_version += 0.1;
-	round = ceil( level.tcs_pers_version * 1000 );
+	if ( isArray( defaultvalue ) )
+	{
+		for ( i = 1; i < defaultvalue.size; i++ )
+		{
+			level.tcs_pers_version += 0.1;
+		}
+	}
+	round = int( level.tcs_pers_version * 1000 );
 	level.tcs_pers_version = round / 1000;
 	level.pers_generic_player_fields_registry[ fieldname ] = defaultvalue;
 	level.pers_generic_player_fields_registry[ "version" ] = level.tcs_pers_version;
@@ -286,7 +293,7 @@ PERS_UNREGISTER_GENERIC_PLAYER_FIELD( fieldname )
 		return;
 	}
 	level.tcs_pers_version += 0.1;
-	round = ceil( level.tcs_pers_version * 1000 );
+	round = int( level.tcs_pers_version * 1000 );
 	level.tcs_pers_version = round / 1000;
 	level.pers_generic_player_fields_registry[ fieldname ] = undefined;
 	level.pers_generic_player_fields_registry[ "version" ] = level.tcs_pers_version;

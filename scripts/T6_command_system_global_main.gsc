@@ -63,6 +63,7 @@ main()
 	level.tcs_remove_server_command = ::CMD_REMOVESERVERCOMMAND;
 	level.tcs_remove_client_command = ::CMD_REMOVECLIENTCOMMAND;
 	level.tcs_register_generic_player_field = ::PERS_REGISTER_GENERIC_PLAYER_FIELD;
+	level.tcs_add_pers_fs_func_to_queue = ::ADD_PERS_FS_FUNC_TO_QUEUE;
 	level.tcs_com_printf = ::COM_PRINTF;
 	level.tcs_com_get_feedback_channel = ::COM_GET_CMD_FEEDBACK_CHANNEL;
 	level.tcs_find_player_in_server = ::find_player_in_server;
