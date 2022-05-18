@@ -330,6 +330,7 @@ check_for_newer_version( path )
 		}
 		if ( new_fields.size > 0 )
 		{
+			json_array[ "version" ] = level.tcs_pers_version;
 			combined_array = arrayCombine( json_array, new_fields, false, true );
 			json = jsonserialize( combined_array, 4 );
 			writefile( path, json );
