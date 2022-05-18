@@ -227,8 +227,15 @@ COMMAND_BUFFER()
 			}
 			else
 			{
-				player CMD_EXECUTE( cmdname, args, is_clientcmd, level.tcs_use_silent_commands, level.tcs_logprint_cmd_usage );
-				player thread CMD_COOLDOWN();
+				if ( is_clientcmd && is_true( player.is_server ) )
+				{
+					level COM_PRINTF( channel, "cmderror", va( "You cannot use %s client command as the server", cmdname ), player );
+				}
+				else 
+				{
+					player CMD_EXECUTE( cmdname, args, is_clientcmd, level.tcs_use_silent_commands, level.tcs_logprint_cmd_usage );
+					player thread CMD_COOLDOWN();
+				}
 			}
 		}
 	}
