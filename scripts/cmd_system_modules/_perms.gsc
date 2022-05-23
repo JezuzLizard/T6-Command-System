@@ -40,11 +40,11 @@ has_permission_for_cmd( cmdname, is_clientcmd )
 	{
 		return true;
 	}
-	if ( is_clientcmd && ( self.player_fields[ "perms" ][ "cmdpower_client" ] >= level.client_commands[ cmdname ].power ) )
+	if ( is_clientcmd && isDefined( level.client_commands[ cmdname ] ) && ( self.player_fields[ "perms" ][ "cmdpower_client" ] >= level.client_commands[ cmdname ].power ) )
 	{
 		return true;
 	}
-	if ( self.player_fields[ "perms" ][ "cmdpower_server" ] >= level.server_commands[ cmdname ].power )
+	if ( isDefined( level.server_commands[ cmdname ] ) && self.player_fields[ "perms" ][ "cmdpower_server" ] >= level.server_commands[ cmdname ].power )
 	{
 		return true;
 	}
