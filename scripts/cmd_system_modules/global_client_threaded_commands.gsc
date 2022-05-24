@@ -11,7 +11,7 @@ CMD_PLAYERLIST_f( arg_list )
 	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	if ( channel != "con" )
 	{
-		channel = channel + "|iprint";
+		channel = "iprint";
 	}
 	if ( array_validate( arg_list ) )
 	{
@@ -51,7 +51,7 @@ CMD_CMDLIST_f( arg_list )
 	channel = self COM_GET_CMD_FEEDBACK_CHANNEL();
 	if ( channel != "con" )
 	{
-		channel = channel + "|iprint";
+		channel = "iprint";
 	}
 	all_commands = arraycombine( level.server_commands, level.client_commands, 1, 0 );
 	cmdnames = getArrayKeys( all_commands );
