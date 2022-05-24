@@ -55,9 +55,10 @@ CMD_CMDLIST_f( arg_list )
 	}
 	all_commands = arraycombine( level.server_commands, level.client_commands, 1, 0 );
 	cmdnames = getArrayKeys( all_commands );
+	client_commands = getArrayKeys( level.client_commands );
 	for ( i = 0; i < cmdnames.size; i++ )
 	{
-		if ( self has_permission_for_cmd( cmdnames[ i ] ) )
+		if ( self has_permission_for_cmd( cmdnames[ i ] ), isInArray( client_commands, cmdnames[ i ] ) )
 		{
 			message = "^3" + all_commands[ cmdnames[ i ] ].usage;
 			level COM_PRINTF( channel, "notitle", message, self );
